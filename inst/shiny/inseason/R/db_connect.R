@@ -4,7 +4,7 @@
 #'
 #' @return A list with AFSC and AKFIN DBI connections
 #' @export
-connect_afsc_akfin <- function() {
+db_connect <- function() {
 
   afsc_user  <- keyring::key_list("afsc")$username
   afsc_pwd   <- keyring::key_get("afsc", afsc_user)
