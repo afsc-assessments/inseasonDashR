@@ -1,0 +1,154 @@
+TRIP_TARGET_CODE,TRIP_TARGET_NAME,OBS_SPECIES_CODE,FMP_AREA
+A,Atka Mackerel,204,BSAI
+A,Atka Mackerel,204,GOA
+A,Atka Mackerel,204,GOA
+A,Atka Mackerel,204,GOA
+A,Atka Mackerel,204,GOA
+A,Atka Mackerel,204,GOA
+B,Pollock - bottom,201,BSAI
+B,Pollock - bottom,201,GOA
+B,Pollock - bottom,201,GOA
+B,Pollock - bottom,201,GOA
+B,Pollock - bottom,201,GOA
+B,Pollock - bottom,201,GOA
+B,Pollock - bottom,201,GOA
+C,Pacific Cod,202,BSAI
+C,Pacific Cod,202,GOA
+D,Deep Water Flatfish - GOA,102,GOA
+D,Deep Water Flatfish - GOA,107,GOA
+D,Deep Water Flatfish - GOA,110,GOA
+D,Deep Water Flatfish - GOA,147,GOA
+E,Alaska Plaice - BSAI,106,BSAI
+F,Other Flatfish - BSAI,105,BSAI
+F,Other Flatfish - BSAI,107,BSAI
+F,Other Flatfish - BSAI,108,BSAI
+F,Other Flatfish - BSAI,109,BSAI
+F,Other Flatfish - BSAI,142,BSAI
+F,Other Flatfish - BSAI,144,BSAI
+F,Other Flatfish - BSAI,148,BSAI
+H,Shallow Water Flatfish - GOA,106,GOA
+H,Shallow Water Flatfish - GOA,108,GOA
+H,Shallow Water Flatfish - GOA,109,GOA
+H,Shallow Water Flatfish - GOA,115,GOA
+H,Shallow Water Flatfish - GOA,120,GOA
+H,Shallow Water Flatfish - GOA,121,GOA
+H,Shallow Water Flatfish - GOA,140,GOA
+H,Shallow Water Flatfish - GOA,142,GOA
+I,Halibut,101,BSAI
+I,Halibut,101,GOA
+K,Rockfish,301,BSAI
+K,Rockfish,302,BSAI
+K,Rockfish,303,BSAI
+K,Rockfish,304,BSAI
+K,Rockfish,305,BSAI
+K,Rockfish,306,BSAI
+K,Rockfish,307,BSAI
+K,Rockfish,308,BSAI
+K,Rockfish,309,BSAI
+K,Rockfish,310,BSAI
+K,Rockfish,311,BSAI
+K,Rockfish,312,BSAI
+K,Rockfish,313,BSAI
+K,Rockfish,314,BSAI
+K,Rockfish,315,BSAI
+K,Rockfish,316,BSAI
+K,Rockfish,317,BSAI
+K,Rockfish,318,BSAI
+K,Rockfish,319,BSAI
+K,Rockfish,320,BSAI
+K,Rockfish,321,BSAI
+K,Rockfish,322,BSAI
+K,Rockfish,323,BSAI
+K,Rockfish,324,BSAI
+K,Rockfish,325,BSAI
+K,Rockfish,326,BSAI
+K,Rockfish,327,BSAI
+K,Rockfish,328,BSAI
+K,Rockfish,329,BSAI
+K,Rockfish,330,BSAI
+K,Rockfish,331,BSAI
+K,Rockfish,332,BSAI
+K,Rockfish,333,BSAI
+K,Rockfish,334,BSAI
+K,Rockfish,335,BSAI
+K,Rockfish,336,BSAI
+K,Rockfish,337,BSAI
+K,Rockfish,338,BSAI
+K,Rockfish,339,BSAI
+K,Rockfish,340,BSAI
+K,Rockfish,341,BSAI
+K,Rockfish,342,BSAI
+K,Rockfish,343,BSAI
+K,Rockfish,345,BSAI
+K,Rockfish,346,BSAI
+K,Rockfish,352,BSAI
+K,Rockfish,354,BSAI
+K,Rockfish,356,BSAI
+K,Rockfish,357,BSAI
+K,Rockfish,301,GOA
+K,Rockfish,302,GOA
+K,Rockfish,303,GOA
+K,Rockfish,304,GOA
+K,Rockfish,305,GOA
+K,Rockfish,306,GOA
+K,Rockfish,307,GOA
+K,Rockfish,308,GOA
+K,Rockfish,309,GOA
+K,Rockfish,310,GOA
+K,Rockfish,311,GOA
+K,Rockfish,312,GOA
+K,Rockfish,313,GOA
+K,Rockfish,314,GOA
+K,Rockfish,315,GOA
+K,Rockfish,316,GOA
+K,Rockfish,317,GOA
+K,Rockfish,318,GOA
+K,Rockfish,319,GOA
+K,Rockfish,320,GOA
+K,Rockfish,321,GOA
+K,Rockfish,322,GOA
+K,Rockfish,323,GOA
+K,Rockfish,324,GOA
+K,Rockfish,325,GOA
+K,Rockfish,326,GOA
+K,Rockfish,327,GOA
+K,Rockfish,328,GOA
+K,Rockfish,329,GOA
+K,Rockfish,330,GOA
+K,Rockfish,331,GOA
+K,Rockfish,332,GOA
+K,Rockfish,333,GOA
+K,Rockfish,334,GOA
+K,Rockfish,335,GOA
+K,Rockfish,336,GOA
+K,Rockfish,337,GOA
+K,Rockfish,338,GOA
+K,Rockfish,339,GOA
+K,Rockfish,340,GOA
+K,Rockfish,341,GOA
+K,Rockfish,342,GOA
+K,Rockfish,343,GOA
+K,Rockfish,345,GOA
+K,Rockfish,346,GOA
+K,Rockfish,352,GOA
+K,Rockfish,354,GOA
+K,Rockfish,356,GOA
+K,Rockfish,357,GOA
+L,Flathead Sole,103,BSAI
+L,Flathead Sole,103,GOA
+M,Kamchatka Flounder - BSAI,147,BSAI
+O,Other Species,,BSAI
+O,Other Species,,GOA
+P,Pollock - midwater,201,BSAI
+P,Pollock - midwater,201,GOA
+R,Rock Sole - BSAI,120,BSAI
+R,Rock Sole - BSAI,121,BSAI
+S,Sablefish,203,BSAI
+S,Sablefish,203,GOA
+T,Greenland Turbot - BSAI,102,BSAI
+W,Arrowtooth Flounder,141,BSAI
+W,Arrowtooth Flounder,141,GOA
+X,Rex Sole - GOA,105,GOA
+Y,Yellowfin Sole - BSAI,140,BSAI
+Z,No retained catch,,BSAI
+Z,No retained catch,,GOA

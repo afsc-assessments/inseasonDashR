@@ -51,35 +51,35 @@ show_keyring_modal <- function() {
   ))
 }
 
-# ---- robust sourcing (supports package + dev folder) ----
-src <- function(path) {
-  candidates <- c(path, file.path("R", basename(path)), basename(path))
-  f <- candidates[file.exists(candidates)][1]
-  if (is.na(f)) stop("Missing required script. Tried: ", paste(candidates, collapse = ", "))
-  source(f, local = globalenv())
-}
+# # ---- robust sourcing (supports package + dev folder) ----
+# src <- function(path) {
+#   candidates <- c(path, file.path("R", basename(path)), basename(path))
+#   f <- candidates[file.exists(candidates)][1]
+#   if (is.na(f)) stop("Missing required script. Tried: ", paste(candidates, collapse = ", "))
+#   source(f, local = globalenv())
+# }
 
-# utils.r for sql_filter/sql_run (if your pull functions rely on it)
-if (file.exists("utils.r")) {
-  source("utils.r", local = globalenv())
-} else if (file.exists("R/utils.r")) {
-  source("R/utils.r", local = globalenv())
-} else {
-  stop("Can't find utils.r (needed for sql_filter/sql_run). Put it in app folder or R/utils.r.")
-}
+# # utils.r for sql_filter/sql_run (if your pull functions rely on it)
+# if (file.exists("utils.r")) {
+#   source("utils.r", local = globalenv())
+# } else if (file.exists("R/utils.r")) {
+#   source("R/utils.r", local = globalenv())
+# } else {
+#   stop("Can't find utils.r (needed for sql_filter/sql_run). Put it in app folder or R/utils.r.")
+# }
 
-# ---- load your functions ----
-src("db_connect.R")
-src("get_catch_data_date.R")
-src("get_council_catch_data.R")
-src("get_length_data_date.R")
-src("get_observer_cpue_data.R")
-src("plot_catch_locations_noaa_np_date.R")
-src("plot_catch_locations_noaa_np_grid_date.R")
-src("plot_cumulative_catch_by_week.R")
-src("plot_length_frequency_noaa.R")
-src("plot_observer_cpue2.R")
-if (file.exists("empty_message_plot.R")) src("empty_message_plot.R")
+# # ---- load your functions ----
+# src("db_connect.R")
+# src("get_catch_data_date.R")
+# src("get_council_catch_data.R")
+# src("get_length_data_date.R")
+# src("get_observer_cpue_data.R")
+# src("plot_catch_locations_noaa_np_date.R")
+# src("plot_catch_locations_noaa_np_grid_date.R")
+# src("plot_cumulative_catch_by_week.R")
+# src("plot_length_frequency_noaa.R")
+# src("plot_observer_cpue2.R")
+# if (file.exists("empty_message_plot.R")) src("empty_message_plot.R")
 
 # ---- safety checks / helpers ----
 assert_fun <- function(name) {
@@ -127,13 +127,13 @@ ui <- fluidPage(
         3,
         numericInput("species_code", "Agency species code", value = 202, min = 0, step = 1),
         textInput("species_name", "Species name (for titles)", value = "Pacific cod"),
-        sliderInput("prop_min", "Min species proportion", min = 0, max = 1, value = 0.30, step = 0.05)
+        sliderInput("prop_min", "Min species proportion for CPUE", min = 0, max = 1, value = 0.30, step = 0.05)
       ),
       column(
         3,
-        textInput("date_min", "Start date (mm/dd/yyyy)", value = "01/01/2015"),
+        textInput("date_min", "Start date (mm/dd/yyyy)", value = "01/01/2025"),
         textInput("date_max", "End date (mm/dd/yyyy)", value = format(Sys.Date(), "%m/%d/%Y")),
-        checkboxInput("use_blend", "Use council blend weighting", value = TRUE)
+        checkboxInput("use_blend", "Use council blend weighting for CPUE", value = TRUE)
       ),
       column(
         3,
@@ -178,7 +178,7 @@ ui <- fluidPage(
     ),
 
     nav_panel(
-      "Length frequency",
+      "Observed raw length frequency",
       card(card_header("Options"),
         fluidRow(
           column(3, checkboxInput("facet_gear_lf", "Facet by gear", value = TRUE)),
@@ -201,7 +201,7 @@ ui <- fluidPage(
     ),
 
     nav_panel(
-      "Observer CPUE (prop filter)",
+      "Observer CPUE",
       card(card_header("Options"),
         fluidRow(
           column(3, selectInput("cpue_plot_type", "CPUE plot type", choices = c("MONTH","GEAR","YEAR"), selected = "MONTH")),
@@ -250,6 +250,7 @@ server <- function(input, output, session) {
     dat <- catch_rv()
     lf  <- lf_rv()
     cc  <- council_rv()
+    cpue <- cpue_rv()
 
     paste0(
       "Connections: ", if (is.null(con_rv())) "not connected" else "connected", "\n",
@@ -542,11 +543,11 @@ server <- function(input, output, session) {
     render_tick()
     lf <- lf_rv()
     validate(need(!is.null(lf), "No length data pulled. Click 'Pull data only' first."))
-    validate(need(!is.null(lf$lf), "Length pull succeeded but lf$lf is missing."))
-    validate(need(nrow0(lf$lf) > 0, "No length data available for this time period for this species."))
+    validate(need(!is.null(lf$raw), "Length pull succeeded but lf$raw is missing."))
+    validate(need(nrow0(lf$raw) > 0, "No length data available for this time period for this species."))
 
     plot_length_frequency_noaa(
-      lf = lf$lf,   # FIX: your prior app passed `lf` (list) not lf$lf (table)
+      lf = lf,   # FIX: your prior app passed `lf` (list) not lf$raw (table)
       species_name = input$species_name,
       date_min = input$date_min,
       date_max = input$date_max,
