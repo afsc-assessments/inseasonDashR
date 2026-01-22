@@ -25,7 +25,7 @@ get_codes <- function(con, spec, sql_dir = "sql") {
   if (missing(spec) || length(spec) < 1) stop("`spec` must be provided.")
   if (!is.numeric(spec)) stop("`spec` must be numeric/integer (agency species code).")
 
-  sql_file <- system.file("sql", "GET_CODES.sql", package = "inseasonDashR")
+  sql_file <- system.file("sql", "GET_CODES.sql", package = "inseasonDashboard")
   sql_code <- readLines(sql_file)
 
   # Inject species codes

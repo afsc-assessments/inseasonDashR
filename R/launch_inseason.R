@@ -8,7 +8,7 @@
 #' @return (Invisibly) the result of [shiny::runApp()].
 #' @export
 launch_inseason <- function(..., quiet = TRUE) {
-  app_dir <- system.file("shiny", "inseason", package = "inseasonDashR")
+  app_dir <- system.file("shiny", "inseason", package = "inseasonDashboard")
   if (app_dir == "") {
     stop("Could not find app directory. Is the package installed correctly?")
   }

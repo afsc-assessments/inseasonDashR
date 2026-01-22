@@ -25,7 +25,7 @@ get_council_catch_data <- function(
   )
 
   # ---- convert species code
-  sql_file <- system.file("sql", "GET_CODES.sql", package = "inseasonDashR")
+  sql_file <- system.file("sql", "GET_CODES.sql", package = "inseasonDashboard")
   sql_code <- readLines(sql_file)
 
   # ---- inject species ----
@@ -40,7 +40,7 @@ get_council_catch_data <- function(
   species=code$AKR_PROGRAM_CODE
 
   # ---- read SQL template ----
-  sql_file <- system.file("sql", "GET_ALL_CATCH.sql", package = "inseasonDashR")
+  sql_file <- system.file("sql", "GET_ALL_CATCH.sql", package = "inseasonDashboard")
   sql_code <- readLines(sql_file)
 
   # ---- inject species ----

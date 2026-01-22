@@ -72,7 +72,7 @@ get_observer_cpue_data <- function(
 
   # ---- SQL: GET_CURRENT.sql ----
 
-  sql_file <- system.file("sql", "GET_CURRENT.sql", package = "inseasonDashR")
+  sql_file <- system.file("sql", "GET_CURRENT.sql", package = "inseasonDashboard")
   sql_code <- readLines(sql_file)
 
   # These helper functions are assumed to exist in your package/project:

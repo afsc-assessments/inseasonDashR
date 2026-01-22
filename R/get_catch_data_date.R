@@ -54,10 +54,10 @@ get_catch_data_date <- function(
   
   # ---- read SQL templates ----
 
-  sql_file <- system.file("sql", "GET_CURRENT.sql", package = "inseasonDashR")
+  sql_file <- system.file("sql", "GET_CURRENT.sql", package = "inseasonDashboard")
   Ocatch  <- readLines(sql_file)
   
-  sql_file <- system.file("sql", "GET_EM_CATCH.sql", package = "inseasonDashR")
+  sql_file <- system.file("sql", "GET_EM_CATCH.sql", package = "inseasonDashboard")
   EMcatch <- readLines(sql_file)
 
   # ---- inject species ----

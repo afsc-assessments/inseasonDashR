@@ -74,7 +74,7 @@ get_length_freq_data_date <- function(
   first_year <- as.integer(format(dmin, "%Y"))
 
   # ---- read SQL template ----
-  sql_file <- system.file("sql", "GET_CURRENT_LENGTH.sql", package = "inseasonDashR")
+  sql_file <- system.file("sql", "GET_CURRENT_LENGTH.sql", package = "inseasonDashboard")
   sql_len <- readLines(sql_file)
 
   # species filter (your SQL uses column named "species")
