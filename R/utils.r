@@ -50,13 +50,13 @@ sql_run <- function(database, query) {
 WED<-function(x)
    { y<-data.table(
      weekday=weekdays(x),
-     wed=ceiling_date(x, "week"),  
+     wed=lubridate::ceiling_date(x, "week"),  
      plus= ifelse(weekdays(x) %in% c("Sunday"), 6, -1),
-     YR=year(x))
-     y$next_saturday<-date(y$wed)+y$plus
-     y[YR<1993]$next_saturday<-date(y[YR<1993]$wed)
+     YR=lubridate::year(x))
+     y$next_saturday<-as.Date(y$wed)+y$plus
+     y[YR<1993]$next_saturday<-as.Date(y[YR<1993]$wed)
      y$yr2<-year(y$next_saturday)
-     y[YR!=yr2]$next_saturday<-date(paste0(y[YR!=yr2]$YR,"-12-31"))
+     y[YR!=yr2]$next_saturday<-as.Date(paste0(y[YR!=yr2]$YR,"-12-31"))
      return(y$next_saturday)
 }
 
