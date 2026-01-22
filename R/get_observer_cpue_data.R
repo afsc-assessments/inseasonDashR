@@ -260,7 +260,7 @@ get_observer_cpue_data <- function(
     sc <- sql_filter("IN", species, sc, "-- insert species")
     code <- sql_run(con_afsc, sc)
 
-    tt_path <- file.path("R", "ALT_TABLES", "TRIP_TARGET_CODES.csv")
+    tt_path <- file.path("data", "ALT_TABLES", "TRIP_TARGET_CODES.csv")
     if (!file.exists(tt_path)) stop("Trip target code table not found: ", tt_path)
     TRIP_TARGET_CODE <- dplyr::as_tibble(utils::read.csv(tt_path))
 
