@@ -10,7 +10,6 @@ get_observer_cpue_data(
   prop_min = 0.3,
   date_min = NULL,
   date_max = NULL,
-  year_min = NULL,
   region = NULL,
   gear = c("Trawl", "Pot", "Longline"),
   use_blend = TRUE
@@ -30,10 +29,6 @@ required for a haul to be retained (default = 0.30).}
 
 \item{date_max}{Optional end date (\code{"mm/dd/yyyy"}) for filtering hauls.}
 
-\item{year_min}{Optional minimum year for filtering data. If \code{date_min}
-is supplied and \code{year_min} is not, the year is inferred from
-\code{date_min}.}
-
 \item{region}{Optional region filter. May be one or more of
 \code{"AI"}, \code{"BS"}, \code{"GOA"}, \code{"BSWGOA"}, or numeric NMFS
 area codes.}
@@ -43,6 +38,10 @@ Allowed values are \code{"Trawl"}, \code{"Pot"}, and \code{"Longline"}.}
 
 \item{use_blend}{Logical. If \code{TRUE}, applies AKFIN-based catch weighting
 to monthly CPUE indices (default = TRUE).}
+
+\item{year_min}{Optional minimum year for filtering data. If \code{date_min}
+is supplied and \code{year_min} is not, the year is inferred from
+\code{date_min}.}
 }
 \value{
 A named list with three elements:

@@ -80,6 +80,7 @@ plot_catch_locations_noaa_np_date <- function(
   num <- function(x) suppressWarnings(as.numeric(x))
 
   # ---- region mapping ----
+    if(any(region %in% c("AI","BS","GOA","BSWGOA"))){
   region_map <- list(
     AI     = 540:544,
     BS     = 500:539,
@@ -88,11 +89,12 @@ plot_catch_locations_noaa_np_date <- function(
   )
   region <- unique(toupper(as.character(region)))
   bad_r <- setdiff(region, names(region_map))
-  if (length(bad_r) > 0) {
-    stop("Unknown region: ", paste(bad_r, collapse = ", "),
-         ". Allowed: ", paste(names(region_map), collapse = ", "))
-  }
+  if (length(bad_r) > 0) stop("Unknown region: ", paste(bad_r, collapse = ", "),
+                              ". Allowed: ", paste(names(region_map), collapse = ", "))
+
   area_codes <- sort(unique(unlist(region_map[region])))
+  }else area_codes = region
+  
 
   # ---- safe standardizer (returns correct 0-row df if input empty) ----
   std_points <- function(df, source_label,

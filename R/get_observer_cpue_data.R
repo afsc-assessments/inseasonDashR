@@ -74,15 +74,11 @@ get_observer_cpue_data <- function(
   prop_min = 0.30,
   date_min = NULL,
   date_max = NULL,
-  year_min = NULL,
   region = NULL,
   gear = c("Trawl", "Pot", "Longline"),
   use_blend = TRUE
   ) {
-  # ---- dependencies ----
-  requireNamespace("dplyr")
-  requireNamespace("stats")
-
+  
   # ---- validate ----
   if (missing(con)) stop("`con` must be provided.")
   if (missing(species) || length(species) < 1) stop("`species` must be provided.")
@@ -125,19 +121,35 @@ get_observer_cpue_data <- function(
     g
   }
 
-  region_map <- list(
-    AI     = 540:544,
-    BS     = 500:539,
-    GOA    = 600:699,
-    BSWGOA = c(500:539, 610:620),
-    ALL= c(500:699)
-  )
+  # region_map <- list(
+  #   AI     = 540:544,
+  #   BS     = 500:539,
+  #   GOA    = 600:699,
+  #   BSWGOA = c(500:539, 610:620),
+  #   ALL= c(500:699)
+  # )
+
+  if(any(region %in% c("AI","BS","GOA","BSWGOA"))){
+    region_map <- list(
+      AI     = 540:544,
+      BS     = 500:539,
+      GOA    = 600:699,
+      BSWGOA = c(500:539, 610:620)
+    )
+    region <- unique(toupper(as.character(region)))
+    bad_r <- setdiff(region, names(region_map))
+    if (length(bad_r) > 0) stop("Unknown region: ", paste(bad_r, collapse = ", "),
+                              ". Allowed: ", paste(names(region_map), collapse = ", "))
+
+    areas <- sort(unique(unlist(region_map[region])))
+    } else areas <- region
 
   # ---- dates ----
   dmin <- parse_mdy(date_min)
   dmax <- parse_mdy(date_max)
   if (!is.null(dmin) && !is.null(dmax) && dmax < dmin) stop("date_max must be >= date_min.")
-  if (is.null(year_min) && !is.null(dmin)) year_min <- as.integer(format(dmin, "%Y"))
+  
+  year_min <- lubridate::year(dmax)-10
 
   # ---- SQL: GET_CURRENT.sql ----
 
@@ -147,10 +159,9 @@ get_observer_cpue_data <- function(
   # These helper functions are assumed to exist in your package/project:
   # - sql_filter(sql_precode, x, sql_code, flag)
   # - sql_run(con, sql_code)
+
   sql_code <- sql_filter(sql_precode = "IN",  x = species, sql_code = sql_code, flag = "-- insert species")
-  if (!is.null(year_min)) {
-    sql_code <- sql_filter(sql_precode = ">=", x = year_min, sql_code = sql_code, flag = "-- insert year")
-  }
+  sql_code <- sql_filter(sql_precode = ">=", x = year_min, sql_code = sql_code, flag = "-- insert year")
 
   d <- sql_run(con_afsc, sql_code)
   d <- dplyr::rename_all(d, toupper)
@@ -202,20 +213,20 @@ get_observer_cpue_data <- function(
   d$GEAR <- recode_gear(d$GEAR_TYPE)
 
   # ---- region filter ----
-  if (!is.null(region)) {
-    r_chr <- toupper(as.character(region))
-    if (any(r_chr %in% names(region_map))) {
-      r <- unique(r_chr)
-      bad_r <- setdiff(r, names(region_map))
-      if (length(bad_r)) stop("Unknown region: ", paste(bad_r, collapse = ", "),
-                              ". Allowed: ", paste(names(region_map), collapse = ", "))
-      areas <- sort(unique(unlist(region_map[r])))
-    } else {
-      areas <- sort(unique(as.integer(region)))
-      if (anyNA(areas)) stop("If `region` is not AI/BS/GOA/BSWGOA, it must be numeric NMFS area codes.")
-    }
+  # if (!is.null(region)) {
+  #   r_chr <- toupper(as.character(region))
+  #   if (any(r_chr %in% names(region_map))) {
+  #     r <- unique(r_chr)
+  #     bad_r <- setdiff(r, names(region_map))
+  #     if (length(bad_r)) stop("Unknown region: ", paste(bad_r, collapse = ", "),
+  #                             ". Allowed: ", paste(names(region_map), collapse = ", "))
+  #     areas <- sort(unique(unlist(region_map[r])))
+  #   } else {
+  #     areas <- sort(unique(as.integer(region)))
+  #     if (anyNA(areas)) stop("If `region` is not AI/BS/GOA/BSWGOA, it must be numeric NMFS area codes.")
+  #   }
     d <- d[d$NMFS_AREA %in% areas, , drop = FALSE]
-  }
+  #}
 
   # ---- gear filter ----
   d <- d[d$GEAR %in% gear, , drop = FALSE]
@@ -354,6 +365,7 @@ get_observer_cpue_data <- function(
 
     sql_blend <-system.file("sql", "GET_BLEND.sql", package = "inseasonDashR")
     sb <- readLines(sql_blend)
+    sb <- sql_filter(">=", year_min, sb, "-- insert YEAR")
     sb <- sql_filter("IN", TRIP_TARGET, sb, "-- insert TRIP_TAR_CODE")
 
     areas_blend <- sort(unique(data_index_month$NMFS_AREA))
