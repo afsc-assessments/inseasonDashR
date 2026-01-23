@@ -209,7 +209,7 @@ if (is.null(lf$raw) || !is.data.frame(lf$raw) || nrow(lf$raw) == 0) {
       x = Inf, y = Inf,
       hjust = 1.02, vjust = 1.02,
       label = info_label,
-      size = 3
+      size = 5
     )
   }
 
@@ -221,7 +221,7 @@ if (is.null(lf$raw) || !is.data.frame(lf$raw) || nrow(lf$raw) == 0) {
         ggplot2::aes(x = -Inf, y = Inf, label = N_LABEL),
         inherit.aes = FALSE,
         hjust = -0.05, vjust = 1.1,
-        size = 3
+        size = 5
       )
     } else {
       p <- p + ggplot2::annotate(
@@ -229,7 +229,7 @@ if (is.null(lf$raw) || !is.data.frame(lf$raw) || nrow(lf$raw) == 0) {
         x = -Inf, y = Inf,
         hjust = -0.05, vjust = 1.1,
         label = n_label_df$N_LABEL[1],
-        size = 3
+        size = 5
       )
     }
   }

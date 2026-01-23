@@ -153,7 +153,7 @@ ui <- fluidPage(
 
   navset_tab(
     nav_panel(
-      "Catch map (points)",
+      "Catch map (Confidential)",
       card(card_header("Options"),
         fluidRow(
           column(3, checkboxInput("facet_gear_points", "Facet by gear", value = FALSE)),

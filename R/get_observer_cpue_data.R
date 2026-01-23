@@ -335,14 +335,17 @@ get_observer_cpue_data <- function(
   if (isTRUE(use_blend)) {
     if (is.null(con_akfin)) stop("use_blend=TRUE requires `con$akfin` (AKFIN connection).")
     
-    sql_codes <- system.file("sql", "GET_CODES.sql", package = "inseasonDashR")
+    sql_codes <- system.file("sql", "GET_CODES.sql", package = "inseasonDashboard")
     sc <- readLines(sql_codes)
     sc <- sql_filter("IN", species, sc, "-- insert species")
     code <- sql_run(con_afsc, sc)
 
-    tt_path <- file.path("data", "ALT_TABLES", "TRIP_TARGET_CODES.csv")
-    if (!file.exists(tt_path)) stop("Trip target code table not found: ", tt_path)
-    TRIP_TARGET_CODE <- dplyr::as_tibble(utils::read.csv(tt_path))
+    tt_path <- system.file("extdata", "ALT_TABLES", "TRIP_TARGET_CODES.csv", package = "inseasonDashboard")
+
+    if (tt_path == "") {stop("TRIP_TARGET_CODES.csv not found. Expected in inst/extdata/ALT_TABLES/.")}
+
+    TRIP_TARGET_CODE <- utils::read.csv(tt_path, stringsAsFactors = FALSE)
+
 
     AREA <- NULL
     if (!is.null(region)) {
@@ -363,7 +366,7 @@ get_observer_cpue_data <- function(
     }
     TRIP_TARGET <- TRIP_TARGET_CODE$TRIP_TARGET_CODE
 
-    sql_blend <-system.file("sql", "GET_BLEND.sql", package = "inseasonDashR")
+    sql_blend <-system.file("sql", "GET_BLEND.sql", package = "inseasonDashboard")
     sb <- readLines(sql_blend)
     sb <- sql_filter(">=", year_min, sb, "-- insert YEAR")
     sb <- sql_filter("IN", TRIP_TARGET, sb, "-- insert TRIP_TAR_CODE")

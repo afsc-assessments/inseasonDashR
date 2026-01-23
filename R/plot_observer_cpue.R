@@ -1,3 +1,58 @@
+#' Plot Observer CPUE Time Series (Proportional Catch Method)
+#'
+#' Generates CPUE indices by number and weight using observer data,
+#' where CPUE is weighted by the proportion of the selected species
+#' in total catch. Indices may be aggregated by year or by year × gear,
+#' with associated standard errors.
+#'
+#' This function is designed for use in in-season dashboards and
+#' assessment support tools. It assumes effort definitions differ by
+#' gear type (e.g., trawl duration vs hooks/pots).
+#'
+#' @param data_o data.frame or data.table
+#'   Observer haul-level data containing species weight, effort,
+#'   gear, year, and NMFS area.
+#'
+#' @param species Character or numeric.
+#'   Species identifier used for labeling outputs.
+#'
+#' @param AREA Character.
+#'   Human-readable area label used in plot titles (e.g., "Bering Sea").
+#'
+#' @param code data.frame.
+#'   Lookup table containing observer program metadata (must include
+#'   \code{OBS_PROGRAM_NAME}).
+#'
+#' @param plot_type Character.
+#'   Either \code{"GEAR"} (separate CPUE series by gear) or
+#'   \code{"Year"} (aggregated across gear).
+#'
+#' @param base_size Numeric.
+#'   Base font size passed to \code{ggplot2::theme_bw()}.
+#'
+#' @return A named list with elements:
+#' \describe{
+#'   \item{cpue}{data.frame containing CPUE indices and standard errors}
+#'   \item{plot_weight}{ggplot object for weight-based CPUE}
+#'   \item{plot_number}{ggplot object for number-based CPUE}
+#' }
+#'
+#' @details
+#' CPUE indices are standardized by the mean CPUE within each gear and
+#' area combination prior to aggregation. Standard errors are propagated
+#' assuming independence.
+#'
+#' Weight-based CPUE is in metric tons per unit effort.
+#'
+#' @seealso
+#' \code{\link{get_observer_cpue_data}},
+#' \code{\link{plot_cumulative_catch_by_week}}
+#'
+#' @importFrom ggplot2 ggplot aes geom_line geom_errorbar facet_wrap
+#'   theme_bw labs
+#'
+#' @export
+
 plot_observer_cpue <- function(
   pulled,
   plot_type = c("MONTH", "GEAR", "YEAR"),
@@ -211,20 +266,3 @@ plot_observer_cpue <- function(
     plot_type = plot_type
   )
 }
-
-
-# =========================
-# Example usage
-# =========================
-# pulled <- pull_observer_cpue_prop2_data(
-#   con = list(afsc = afsc, akfin = akfin),
-#   species = 21740,
-#   prop_min = 0.30,
-#   region = "BS",
-#   gear = c("Trawl","Pot"),
-#   use_blend = TRUE,
-#   sql_dir = "inst/sql"
-# )
-#
-# out <- plot_observer_cpue_prop2(pulled, plot_type = "MONTH")
-# out$plots$weight
