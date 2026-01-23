@@ -201,7 +201,7 @@ ui <- fluidPage(
     ),
 
     nav_panel(
-      "Observer CPUE",
+      "Observer CPUE (requires data pull to update)",
       card(card_header("Options"),
         fluidRow(
           column(3, selectInput("cpue_plot_type", "CPUE plot type", choices = c("MONTH","GEAR","YEAR"), selected = "MONTH")),

@@ -309,7 +309,7 @@ plot_catch_locations_noaa_np_date <- function(
         x = Inf, y = Inf,
         label = gear_label,
         hjust = 1.02, vjust = 1.02,
-        size = 3
+        size = 5
       ) +
       ggplot2::theme(plot.margin = ggplot2::margin(7, 12, 7, 7))
   }
@@ -321,14 +321,14 @@ plot_catch_locations_noaa_np_date <- function(
         data = count_label_df,
         ggplot2::aes(x = -Inf, y = Inf, label = LABEL),
         inherit.aes = FALSE,
-        hjust = -0.05, vjust = 1.1, size = 3
+        hjust = -0.05, vjust = 1.1, size = 5
       )
     } else {
       p <- p + ggplot2::annotate(
         "text",
         x = -Inf, y = Inf,
         label = count_label_df$LABEL[1],
-        hjust = -0.05, vjust = 1.1, size = 3
+        hjust = -0.05, vjust = 1.1, size = 5
       )
     }
   }

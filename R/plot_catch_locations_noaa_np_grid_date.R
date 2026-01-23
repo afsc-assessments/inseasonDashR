@@ -279,7 +279,7 @@ plot_catch_locations_noaa_np_grid_date <- function(
       x = Inf, y = Inf,
       label = info_label,
       hjust = 1.02, vjust = 1.02,
-      size = 3
+      size = 5
     )
   }
 

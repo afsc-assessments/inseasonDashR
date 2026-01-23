@@ -199,14 +199,14 @@ plot_cumulative_catch_by_week <- function(
         data = totals_df,
         ggplot2::aes(x = -Inf, y = Inf, label = LABEL),
         inherit.aes = FALSE,
-        hjust = -0.05, vjust = 1.1, size = 3
+        hjust = -0.05, vjust = 1.1, size = 5
       )
     } else {
       p <- p + ggplot2::annotate(
         "text",
         x = -Inf, y = Inf,
         label = totals_df$LABEL,
-        hjust = -0.05, vjust = 1.1, size = 3
+        hjust = -0.05, vjust = 1.1, size = 5
       )
     }
   }
