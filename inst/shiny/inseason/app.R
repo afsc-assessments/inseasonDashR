@@ -78,7 +78,7 @@ show_keyring_modal <- function() {
 # src("plot_catch_locations_noaa_np_grid_date.R")
 # src("plot_cumulative_catch_by_week.R")
 # src("plot_length_frequency_noaa.R")
-# src("plot_observer_cpue2.R")
+# src("plot_observer_cpue.R")
 # if (file.exists("empty_message_plot.R")) src("empty_message_plot.R")
 
 # ---- safety checks / helpers ----
