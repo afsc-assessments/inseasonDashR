@@ -73,11 +73,11 @@ get_catch_data_date <- function(
   # ---- run queries ----
   data_o <- sql_run(afsc, Ocatch) |>
     dplyr::rename_all(toupper) |>
-    data.table::as.data.table()
+    data.table::data.table()
 
   data_em <- sql_run(akfin, EMcatch) |>
     dplyr::rename_all(toupper) |>
-    data.table::as.data.table()
+    data.table::data.table()
 
   # ---- post-pull date filtering (inclusive) ----
   if (!is.null(dmin) || !is.null(dmax)) {

@@ -1,3 +1,72 @@
+#' Pull observer-based CPUE data and construct monthly CPUE indices
+#'
+#' Retrieves observer haul-level data for a given species, applies standard
+#' filtering rules (date, region, gear, species proportion), calculates CPUE,
+#' and aggregates results to monthly CPUE indices by gear and NMFS area.
+#' Optionally applies AKFIN catch-based blending weights to produce
+#' fleet-representative indices.
+#'
+#' @details
+#' This function is designed for use in in-season and assessment-support
+#' workflows that rely on AFSC observer data, with optional integration of
+#' AKFIN catch data for blending. Effort is defined as haul duration (minutes)
+#' for trawl gear and number of hooks or pots for fixed gear.
+#'
+#' Monthly indices are computed only when minimum sample size criteria
+#' are met (at least 2 vessels and more than 3 hauls per stratum).
+#'
+#' @param con A DBI connection to the AFSC observer database, or a named list
+#'   with elements \code{afsc} and \code{akfin}. The AKFIN connection is required
+#'   only when \code{use_blend = TRUE}.
+#' @param species Numeric vector of observer species codes.
+#' @param prop_min Minimum proportion of the species in the total catch
+#'   required for a haul to be retained (default = 0.30).
+#' @param date_min Optional start date (\code{"mm/dd/yyyy"}) for filtering hauls.
+#' @param date_max Optional end date (\code{"mm/dd/yyyy"}) for filtering hauls.
+#' @param year_min Optional minimum year for filtering data. If \code{date_min}
+#'   is supplied and \code{year_min} is not, the year is inferred from
+#'   \code{date_min}.
+#' @param region Optional region filter. May be one or more of
+#'   \code{"AI"}, \code{"BS"}, \code{"GOA"}, \code{"BSWGOA"}, or numeric NMFS
+#'   area codes.
+#' @param gear Character vector specifying gears to include.
+#'   Allowed values are \code{"Trawl"}, \code{"Pot"}, and \code{"Longline"}.
+#' @param use_blend Logical. If \code{TRUE}, applies AKFIN-based catch weighting
+#'   to monthly CPUE indices (default = TRUE).
+#'
+#' @return A named list with three elements:
+#' \describe{
+#'   \item{data_obs}{Haul-level observer data with calculated CPUE and effort.}
+#'   \item{data_index_month}{Monthly CPUE indices by year, month, gear, and
+#'     NMFS area, including standard errors.}
+#'   \item{meta}{List of metadata describing whether count data were present
+#'     and which columns were used for haul and vessel identifiers.}
+#' }
+#'
+#' @references
+#' Alaska Fisheries Information Network (AKFIN)  
+#' NOAA Fisheries, Alaska Fisheries Science Center
+#'
+#' @seealso
+#' \code{\link{sql_run}}, \code{\link{sql_filter}}
+#'
+#' @examples
+#' \dontrun{
+#' con <- list(
+#'   afsc   = DBI::dbConnect(odbc::odbc(), "afsc"),
+#'   akfin  = DBI::dbConnect(odbc::odbc(), "akfin")
+#' )
+#'
+#' res <- get_observer_cpue_data(
+#'   con      = con,
+#'   species  = 202,
+#'   region   = "BS",
+#'   gear     = c("Trawl", "Pot"),
+#'   year_min = 2015
+#' )
+#' }
+#'
+#' @export
 
 get_observer_cpue_data <- function(
   con,
