@@ -51,36 +51,6 @@ show_keyring_modal <- function() {
   ))
 }
 
-# # ---- robust sourcing (supports package + dev folder) ----
-# src <- function(path) {
-#   candidates <- c(path, file.path("R", basename(path)), basename(path))
-#   f <- candidates[file.exists(candidates)][1]
-#   if (is.na(f)) stop("Missing required script. Tried: ", paste(candidates, collapse = ", "))
-#   source(f, local = globalenv())
-# }
-
-# # utils.r for sql_filter/sql_run (if your pull functions rely on it)
-# if (file.exists("utils.r")) {
-#   source("utils.r", local = globalenv())
-# } else if (file.exists("R/utils.r")) {
-#   source("R/utils.r", local = globalenv())
-# } else {
-#   stop("Can't find utils.r (needed for sql_filter/sql_run). Put it in app folder or R/utils.r.")
-# }
-
-# # ---- load your functions ----
-# src("db_connect.R")
-# src("get_catch_data_date.R")
-# src("get_council_catch_data.R")
-# src("get_length_data_date.R")
-# src("get_observer_cpue_data.R")
-# src("plot_catch_locations_noaa_np_date.R")
-# src("plot_catch_locations_noaa_np_grid_date.R")
-# src("plot_cumulative_catch_by_week.R")
-# src("plot_length_frequency_noaa.R")
-# src("plot_observer_cpue.R")
-# if (file.exists("empty_message_plot.R")) src("empty_message_plot.R")
-
 # ---- safety checks / helpers ----
 assert_fun <- function(name) {
   obj <- get(name, envir = globalenv(), inherits = TRUE)
@@ -133,7 +103,9 @@ ui <- fluidPage(
         3,
         textInput("date_min", "Start date (mm/dd/yyyy)", value = "01/01/2025"),
         textInput("date_max", "End date (mm/dd/yyyy)", value = format(Sys.Date(), "%m/%d/%Y")),
+        checkboxInput("pull_cpue", "Include observer CPUE", value = TRUE),
         checkboxInput("use_blend", "Use council blend weighting for CPUE", value = TRUE)
+        
       ),
       column(
         3,
@@ -144,6 +116,7 @@ ui <- fluidPage(
         3,
         actionButton("pull_data", "Pull data only", class = "btn-primary"),
         actionButton("render_plots", "Render plots", class = "btn-success"),
+        downloadButton("export_pdf", "Export PDF", class = "btn-warning"),
         br(), br(),
         uiOutput("pulling_banner"),
         verbatimTextOutput("status", placeholder = TRUE)
@@ -255,9 +228,9 @@ server <- function(input, output, session) {
     paste0(
       "Connections: ", if (is.null(con_rv())) "not connected" else "connected", "\n",
       "Observer/EM catch: ", if (is.null(dat)) "not pulled" else paste0("pulled (", nrow0(dat$data_o), " obs, ", nrow0(dat$data_em), " em)"), "\n",
-      "Length-freq: ", if (is.null(lf) || is.null(lf$lf)) "not pulled" else paste0("pulled (rows: ", nrow0(lf$lf), ")"), "\n",
+      "Length-freq: ", if (is.null(lf) || is.null(lf$raw)) "not pulled" else paste0("pulled (rows: ", nrow0(lf$raw), ")"), "\n",
       "Council catch: ", if (is.null(cc)) "not pulled" else paste0("pulled (rows: ", nrow0(cc), ")"), "\n",
-      "CPUE: ", if (is.null(cpue_rv())) "not pulled" else "pulled"
+      "CPUE: ", if (!isTRUE(input$pull_cpue)) "skipped" else if (is.null(cpue)) "not pulled" else "pulled"
     )
   })
 
@@ -297,6 +270,7 @@ server <- function(input, output, session) {
     gr       <- isolate(input$gear)
     prop_m   <- isolate(input$prop_min)
     ublend   <- isolate(input$use_blend)
+    do_cpue  <- isTRUE(isolate(input$pull_cpue))
 
     dmin <- parse_mdy(dmin_chr)
     dmax <- parse_mdy(dmax_chr)
@@ -429,33 +403,40 @@ server <- function(input, output, session) {
         lf_rv(lf_dat)
       }
 
-      # 5) CPUE
-      pull_stage_rv("Pulling CPUE data…")
-      incProgress(0.20, detail = "CPUE…")
+      # 5) CPUE (optional)
+      if (isTRUE(do_cpue)) {
 
-      cpue_dat <- tryCatch(
-        call_formals(
-          get_observer_cpue_data,
-          list(
-            con       = con,
-            species   = sp,
-            prop_min  = prop_m,
-            date_min  = dmin_chr2,
-            date_max  = dmax_chr,
-            year_min  = year_min,
-            region    = reg,
-            gear      = gr,
-            use_blend = ublend
-          )
-        ),
-        error = function(e) e
-      )
+        pull_stage_rv("Pulling CPUE data…")
+        incProgress(0.20, detail = "CPUE…")
 
-      if (inherits(cpue_dat, "error") || is.null(cpue_dat)) {
-        showNotification(paste("CPUE pull failed:", conditionMessage(cpue_dat)), type = "error", duration = 10)
-        cpue_rv(NULL)
+        cpue_dat <- tryCatch(
+          call_formals(
+            get_observer_cpue_data,
+            list(
+              con       = con,
+              species   = sp,
+              prop_min  = prop_m,
+              date_min  = dmin_chr2,
+              date_max  = dmax_chr,
+              year_min  = year_min,
+              region    = reg,
+              gear      = gr,
+              use_blend = ublend
+            )
+          ),
+          error = function(e) e
+        )
+
+        if (inherits(cpue_dat, "error") || is.null(cpue_dat)) {
+          showNotification(paste("CPUE pull failed:", conditionMessage(cpue_dat)), type = "error", duration = 10)
+          cpue_rv(NULL)
+        } else {
+          cpue_rv(cpue_dat)
+        }
+
       } else {
-        cpue_rv(cpue_dat)
+        # If user opted out, ensure CPUE is cleared so we don't accidentally export stale results
+        cpue_rv(NULL)
       }
 
       pull_stage_rv("Done.")
@@ -494,6 +475,101 @@ server <- function(input, output, session) {
   observeEvent(input$render_plots, {
     render_tick(render_tick() + 1L)
   })
+
+  # ---- EXPORT: multi-page PDF of all available figures ----
+  output$export_pdf <- downloadHandler(
+    filename = function() {
+      paste0("inseasonDash_", format(Sys.Date(), "%Y-%m-%d"), ".pdf")
+    },
+    content = function(file) {
+
+      add_plot_page <- function(p) {
+        if (is.null(p)) return(invisible(FALSE))
+        tryCatch({
+          print(p)
+          TRUE
+        }, error = function(e) FALSE)
+      }
+
+      grDevices::pdf(file, width = 11, height = 8.5, onefile = TRUE)
+      on.exit(grDevices::dev.off(), add = TRUE)
+
+      # ---- Catch maps ----
+      dat <- catch_rv()
+      if (!is.null(dat) && (nrow0(dat$data_o) > 0 || nrow0(dat$data_em) > 0)) {
+
+        p1 <- plot_catch_locations_noaa_np_date(
+          data_o = dat$data_o,
+          data_em = dat$data_em,
+          species_name = isolate(input$species_name),
+          date_min = isolate(input$date_min),
+          date_max = isolate(input$date_max),
+          region = isolate(region_val(input$region)),
+          gear = isolate(input$gear),
+          facet_gear = isolate(input$facet_gear_points),
+          show_titles = isolate(input$show_titles_points),
+          show_label = isolate(input$show_label_points)
+        )
+        add_plot_page(p1)
+
+        p2 <- plot_catch_locations_noaa_np_grid_date(
+          data_o = dat$data_o,
+          data_em = dat$data_em,
+          species_name = isolate(input$species_name),
+          date_min = isolate(input$date_min),
+          date_max = isolate(input$date_max),
+          region = isolate(region_val(input$region)),
+          gear = isolate(input$gear),
+          cell_km = isolate(input$grid_km),
+          facet_gear = isolate(input$facet_gear_grid),
+          show_titles = isolate(input$show_titles_grid),
+          show_label = isolate(input$show_label_grid)
+        )
+        add_plot_page(p2)
+      }
+
+      # ---- Length frequency ----
+      lf <- lf_rv()
+      if (!is.null(lf) && !is.null(lf$raw) && nrow0(lf$raw) > 0) {
+        p3 <- plot_length_frequency_noaa(
+          lf = lf,
+          species_name = isolate(input$species_name),
+          date_min = isolate(input$date_min),
+          date_max = isolate(input$date_max),
+          gear = isolate(input$gear),
+          region = isolate(region_val(input$region)),
+          facet_gear = isolate(input$facet_gear_lf),
+          show_titles = isolate(input$show_titles_lf),
+          show_label = isolate(input$show_label_lf)
+        )
+        add_plot_page(p3)
+      }
+
+      # ---- Cumulative catch ----
+      cc <- council_rv()
+      if (!is.null(cc) && nrow0(cc) > 0) {
+        p4 <- plot_cumulative_catch_by_week(
+          catch = cc,
+          region = isolate(region_val(input$region)),
+          facet_gear = isolate(input$facet_gear_cum),
+          show_titles = isolate(input$show_titles_cum)
+        )
+        add_plot_page(p4)
+      }
+
+      # ---- CPUE (only if pulled) ----
+      cpue_dat <- cpue_rv()
+      if (!is.null(cpue_dat)) {
+        out <- plot_observer_cpue(
+          cpue_dat,
+          plot_type = isolate(input$cpue_plot_type),
+          month_gear_facet = isolate(input$month_gear_facet)
+        )
+        if (!is.null(out$plots$weight)) add_plot_page(out$plots$weight)
+        if (!is.null(out$plots$number)) add_plot_page(out$plots$number)
+      }
+    }
+  )
 
   # ---- plots (gated by render_tick) ----
   output$p_points <- renderPlot({
@@ -547,7 +623,7 @@ server <- function(input, output, session) {
     validate(need(nrow0(lf$raw) > 0, "No length data available for this time period for this species."))
 
     plot_length_frequency_noaa(
-      lf = lf,   # FIX: your prior app passed `lf` (list) not lf$raw (table)
+      lf = lf,   # FIX: plotting fn expects the list wrapper
       species_name = input$species_name,
       date_min = input$date_min,
       date_max = input$date_max,
@@ -575,6 +651,12 @@ server <- function(input, output, session) {
 
   output$p_cpue_wt <- renderPlot({
     render_tick()
+
+    validate(
+      need(isTRUE(input$pull_cpue),
+           "Observer CPUE was not pulled. Enable 'Include observer CPUE' and pull data again.")
+    )
+
     cpue_dat <- cpue_rv()
     validate(need(!is.null(cpue_dat), "No CPUE data pulled. Click 'Pull data only' first."))
 
@@ -587,6 +669,12 @@ server <- function(input, output, session) {
 
   output$p_cpue_n <- renderPlot({
     render_tick()
+
+    validate(
+      need(isTRUE(input$pull_cpue),
+           "Observer CPUE was not pulled. Enable 'Include observer CPUE' and pull data again.")
+    )
+
     cpue_dat <- cpue_rv()
     validate(need(!is.null(cpue_dat), "No CPUE data pulled. Click 'Pull data only' first."))
 

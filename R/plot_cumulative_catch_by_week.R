@@ -108,6 +108,13 @@ plot_cumulative_catch_by_week <- function(
   # ---- final year ----
   final_year <- max(d$YEAR, na.rm = TRUE)
 
+    # ---- last observed week in final year (by gear) ----
+  # Use the filtered raw data (d), before completing missing weeks
+  last_week_final <- d[d$YEAR == final_year, , drop = FALSE] |>
+    dplyr::group_by(GEAR) |>
+    dplyr::summarise(MAX_WEEK = max(WEEK, na.rm = TRUE), .groups = "drop")
+
+
   # ---- totals (final year only) ----
   if (isTRUE(show_totals)) {
     if (facet_gear) {
@@ -150,6 +157,23 @@ plot_cumulative_catch_by_week <- function(
     dplyr::group_by(GEAR, YEAR) |>
     dplyr::mutate(CUM_MT = cumsum(WT_MT)) |>
     dplyr::ungroup()
+
+  # ---- stop final-year line after last observed week ----
+  # If not faceting, everything was collapsed to GEAR == "All" later,
+  # so apply the same collapse to last_week_final too.
+  if (!facet_gear) last_week_final$GEAR <- "All"
+
+  agg <- agg |>
+    dplyr::left_join(last_week_final, by = "GEAR") |>
+    dplyr::mutate(
+      CUM_MT = dplyr::if_else(
+        YEAR == final_year & WEEK > MAX_WEEK,
+        as.numeric(NA),
+        CUM_MT
+      )
+    ) |>
+    dplyr::select(-MAX_WEEK)
+  
 
   # ---- color + linewidth mapping ----
   yrs <- sort(unique(agg$YEAR))
