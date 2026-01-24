@@ -121,15 +121,7 @@ get_observer_cpue_data <- function(
     g
   }
 
-  # region_map <- list(
-  #   AI     = 540:544,
-  #   BS     = 500:539,
-  #   GOA    = 600:699,
-  #   BSWGOA = c(500:539, 610:620),
-  #   ALL= c(500:699)
-  # )
-
-  if(any(region %in% c("AI","BS","GOA","BSWGOA"))){
+ if(any(region %in% c("AI","BS","GOA","BSWGOA"))){
     region_map <- list(
       AI     = 540:544,
       BS     = 500:539,
@@ -212,21 +204,8 @@ get_observer_cpue_data <- function(
 
   d$GEAR <- recode_gear(d$GEAR_TYPE)
 
-  # ---- region filter ----
-  # if (!is.null(region)) {
-  #   r_chr <- toupper(as.character(region))
-  #   if (any(r_chr %in% names(region_map))) {
-  #     r <- unique(r_chr)
-  #     bad_r <- setdiff(r, names(region_map))
-  #     if (length(bad_r)) stop("Unknown region: ", paste(bad_r, collapse = ", "),
-  #                             ". Allowed: ", paste(names(region_map), collapse = ", "))
-  #     areas <- sort(unique(unlist(region_map[r])))
-  #   } else {
-  #     areas <- sort(unique(as.integer(region)))
-  #     if (anyNA(areas)) stop("If `region` is not AI/BS/GOA/BSWGOA, it must be numeric NMFS area codes.")
-  #   }
+
     d <- d[d$NMFS_AREA %in% areas, , drop = FALSE]
-  #}
 
   # ---- gear filter ----
   d <- d[d$GEAR %in% gear, , drop = FALSE]
@@ -424,35 +403,69 @@ get_observer_cpue_data <- function(
       CatchPROPYEAR <- Catch_Gear_Year %>%
         dplyr::left_join(Catch_Year, by = c("YEAR","NMFS_AREA")) %>%
         dplyr::mutate(
-          YEARGEARPROP = dplyr::if_else(is.finite(.data$YearGearCatch / .data$YearCatch),
-                                        .data$YearGearCatch / .data$YearCatch, 0)
+          YEARGEARPROP = dplyr::if_else(
+            is.finite(.data$YearGearCatch / .data$YearCatch),
+            .data$YearGearCatch / .data$YearCatch,
+            NA_real_
+          )
         ) %>%
+        # Normalize gear shares within each YEAR x AREA (protects incomplete catch coverage)
+        dplyr::group_by(.data$YEAR, .data$NMFS_AREA) %>%
+        dplyr::mutate(
+          YEARGEARPROP = dplyr::if_else(is.finite(.data$YEARGEARPROP), .data$YEARGEARPROP, 0),
+          .tmp_sum = sum(.data$YEARGEARPROP, na.rm = TRUE),
+          .tmp_n   = dplyr::n(),
+          YEARGEARPROP = dplyr::if_else(.tmp_sum > 0, .data$YEARGEARPROP / .tmp_sum, 1 / .tmp_n)
+        ) %>%
+        dplyr::ungroup() %>%
         dplyr::select(.data$YEAR, .data$GEAR, .data$NMFS_AREA, .data$YEARGEARPROP)
 
       Catch_Gearprop <- Catch_Gear_Month %>%
         dplyr::left_join(Catch_Gear_Year, by = c("YEAR","GEAR","NMFS_AREA")) %>%
         dplyr::mutate(
-          CATCHGearPROP = dplyr::if_else(is.finite(.data$MonthGearCatch / .data$YearGearCatch),
-                                         .data$MonthGearCatch / .data$YearGearCatch, 0)
+          CATCHGearPROP = dplyr::if_else(
+            is.finite(.data$MonthGearCatch / .data$YearGearCatch),
+            .data$MonthGearCatch / .data$YearGearCatch,
+            NA_real_
+          )
         ) %>%
+        # Normalize month shares within each YEAR x GEAR x AREA (protects incomplete catch coverage)
+        dplyr::group_by(.data$YEAR, .data$GEAR, .data$NMFS_AREA) %>%
+        dplyr::mutate(
+          CATCHGearPROP = dplyr::if_else(is.finite(.data$CATCHGearPROP), .data$CATCHGearPROP, 0),
+          .tmp_sum = sum(.data$CATCHGearPROP, na.rm = TRUE),
+          .tmp_n   = dplyr::n(),
+          CATCHGearPROP = dplyr::if_else(.tmp_sum > 0, .data$CATCHGearPROP / .tmp_sum, 1 / .tmp_n)
+        ) %>%
+        dplyr::ungroup() %>%
         dplyr::select(.data$YEAR, .data$MONTH, .data$GEAR, .data$NMFS_AREA, .data$CATCHGearPROP)
 
       data_index_month <- data_index_month %>%
         dplyr::left_join(Catch_Gearprop, by = keycols) %>%
         dplyr::mutate(
           CATCHGearPROP = dplyr::if_else(is.finite(.data$CATCHGearPROP), .data$CATCHGearPROP, 0),
-          WCPUE_INDEX = .data$WCPUE_INDEX * .data$CATCHGearPROP,
-          WCPUE_SE    = .data$WCPUE_SE    * .data$CATCHGearPROP,
-          NCPUE_INDEX = if (has_count) .data$NCPUE_INDEX * .data$CATCHGearPROP else NA_real_,
-          NCPUE_SE    = if (has_count) .data$NCPUE_SE    * .data$CATCHGearPROP else NA_real_
+
+          # --- gear-standardized monthly contributions (weights sum to 1 within YEAR x GEAR x AREA) ---
+          WCPUE_INDEX_GEAR = .data$WCPUE_INDEX * .data$CATCHGearPROP,
+          WCPUE_SE_GEAR    = .data$WCPUE_SE    * .data$CATCHGearPROP,
+          NCPUE_INDEX_GEAR = if (has_count) .data$NCPUE_INDEX * .data$CATCHGearPROP else NA_real_,
+          NCPUE_SE_GEAR    = if (has_count) .data$NCPUE_SE    * .data$CATCHGearPROP else NA_real_
         ) %>%
         dplyr::left_join(CatchPROPYEAR, by = c("YEAR","GEAR","NMFS_AREA")) %>%
         dplyr::mutate(
           YEARGEARPROP = dplyr::if_else(is.finite(.data$YEARGEARPROP), .data$YEARGEARPROP, 0),
-          WCPUE_INDEX = .data$WCPUE_INDEX * .data$YEARGEARPROP,
-          WCPUE_SE    = .data$WCPUE_SE    * .data$YEARGEARPROP,
-          NCPUE_INDEX = if (has_count) .data$NCPUE_INDEX * .data$YEARGEARPROP else NA_real_,
-          NCPUE_SE    = if (has_count) .data$NCPUE_SE    * .data$YEARGEARPROP else NA_real_
+
+          # --- fleet-standardized monthly contributions (weights sum to 1 within YEAR x AREA) ---
+          WCPUE_INDEX_FLEET = .data$WCPUE_INDEX_GEAR * .data$YEARGEARPROP,
+          WCPUE_SE_FLEET    = .data$WCPUE_SE_GEAR    * .data$YEARGEARPROP,
+          NCPUE_INDEX_FLEET = if (has_count) .data$NCPUE_INDEX_GEAR * .data$YEARGEARPROP else NA_real_,
+          NCPUE_SE_FLEET    = if (has_count) .data$NCPUE_SE_GEAR    * .data$YEARGEARPROP else NA_real_,
+
+          # Backward-compatible columns: keep WCPUE_INDEX / WCPUE_SE as fleet-weighted
+          WCPUE_INDEX = .data$WCPUE_INDEX_FLEET,
+          WCPUE_SE    = .data$WCPUE_SE_FLEET,
+          NCPUE_INDEX = if (has_count) .data$NCPUE_INDEX_FLEET else NA_real_,
+          NCPUE_SE    = if (has_count) .data$NCPUE_SE_FLEET    else NA_real_
         )
     }
   }

@@ -234,30 +234,70 @@ server <- function(input, output, session) {
     )
   })
 
-  # ---- modal save handler (stores creds + auto-continues the pull) ----
-  observeEvent(input$kr_save, {
-    req(has_keyring)
+# ---- modal save handler (stores creds + auto-continues the pull) ----
+observeEvent(input$kr_save, {
+  # Don't just req(has_keyring) — confirm keyring is actually available
+  if (!requireNamespace("keyring", quietly = TRUE)) {
+    showNotification("Package 'keyring' is not installed.", type = "error", duration = 10)
+    return()
+  }
 
-    if (!nzchar(input$kr_afsc_user) || !nzchar(input$kr_afsc_pwd) ||
-        !nzchar(input$kr_akfin_user) || !nzchar(input$kr_akfin_pwd)) {
-      showNotification("Please fill in all username/password fields.", type = "error")
-      return()
+  if (!nzchar(input$kr_afsc_user) || !nzchar(input$kr_afsc_pwd) ||
+      !nzchar(input$kr_akfin_user) || !nzchar(input$kr_akfin_pwd)) {
+    showNotification("Please fill in all username/password fields.", type = "error")
+    return()
+  }
+
+  # isolate inputs so they don't change mid-handler
+  afsc_user  <- isolate(input$kr_afsc_user)
+  afsc_pwd   <- isolate(input$kr_afsc_pwd)
+  akfin_user <- isolate(input$kr_akfin_user)
+  akfin_pwd  <- isolate(input$kr_akfin_pwd)
+
+  # Helpful: force Keychain/keyring initialization in a way that may trigger auth earlier
+  # (On macOS, this can surface the Keychain prompt.)
+  tryCatch({
+    keyring::keyring_list()
+  }, error = function(e) {
+    showNotification(
+      paste("Keyring backend not available:", conditionMessage(e)),
+      type = "error", duration = 12
+    )
+    return()
+  })
+
+  ok <- tryCatch({
+    keyring::key_set_with_value("afsc",  username = afsc_user,  password = afsc_pwd)
+    keyring::key_set_with_value("akfin", username = akfin_user, password = akfin_pwd)
+    TRUE
+  }, error = function(e) {
+    # macOS-specific guidance: Keychain prompt/permissions
+    msg <- conditionMessage(e)
+
+    if (Sys.info()[["sysname"]] == "Darwin") {
+      msg <- paste0(
+        msg,
+        "\n\nmacOS note: This often happens when Keychain access requires permission ",
+        "and the prompt is hidden/blocked. Try:\n",
+        "1) Run these once in the R console (not inside the app) and approve any Keychain prompts:\n",
+        "   keyring::key_set('afsc', username = '", afsc_user, "')\n",
+        "   keyring::key_set('akfin', username = '", akfin_user, "')\n",
+        "2) Or open Keychain Access and confirm entries exist and are allowed for R/RStudio."
+      )
     }
 
-    tryCatch({
-      keyring::key_set_with_value("afsc",  username = input$kr_afsc_user,  password = input$kr_afsc_pwd)
-      keyring::key_set_with_value("akfin", username = input$kr_akfin_user, password = input$kr_akfin_pwd)
-    }, error = function(e) {
-      showNotification(paste("Failed to save to keyring:", conditionMessage(e)), type = "error", duration = 10)
-      return()
-    })
-
-    removeModal()
-    showNotification("Saved credentials to keyring. Continuing with data pull…", type = "message", duration = 4)
-
-    # auto-continue
-    pull_trigger(pull_trigger() + 1L)
+    showNotification(paste("Failed to save to keyring:", msg), type = "error", duration = 15)
+    FALSE
   })
+
+  if (!ok) return()
+
+  removeModal()
+  showNotification("Saved credentials to keyring. Continuing with data pull…", type = "message", duration = 4)
+
+  # auto-continue (only after successful save)
+  pull_trigger(pull_trigger() + 1L)
+})
 
   # ---- staged pull runner ----
   start_pull <- function() {

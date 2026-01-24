@@ -65,6 +65,8 @@ plot_observer_cpue <- function(
 
   plot_type <- match.arg(plot_type)
 
+
+  subtitle_std <- ""
   if (is.null(pulled$data_index_month) || nrow(pulled$data_index_month) == 0) {
     return(list(
       data_index = pulled$data_index_month,
@@ -77,6 +79,29 @@ plot_observer_cpue <- function(
 
   di <- dplyr::as_tibble(pulled$data_index_month)
 
+  # Choose which index columns to use.
+  # - *_FLEET columns represent catch-weighted blending across gears (fleet index).
+  # - *_GEAR  columns represent gear-standardized indices (not down-weighted by annual gear share).
+  want_gear_index <- isTRUE(plot_type == "GEAR") || (isTRUE(plot_type == "MONTH") && isTRUE(month_gear_facet))
+
+  if (want_gear_index && all(c("WCPUE_INDEX_GEAR","WCPUE_SE_GEAR") %in% names(di))) {
+    w_idx_col <- "WCPUE_INDEX_GEAR"
+    w_se_col  <- "WCPUE_SE_GEAR"
+    n_idx_col <- if (has_count && "NCPUE_INDEX_GEAR" %in% names(di)) "NCPUE_INDEX_GEAR" else "NCPUE_INDEX"
+    n_se_col  <- if (has_count && "NCPUE_SE_GEAR"    %in% names(di)) "NCPUE_SE_GEAR"    else "NCPUE_SE"
+  } else if (!want_gear_index && all(c("WCPUE_INDEX_FLEET","WCPUE_SE_FLEET") %in% names(di))) {
+    w_idx_col <- "WCPUE_INDEX_FLEET"
+    w_se_col  <- "WCPUE_SE_FLEET"
+    n_idx_col <- if (has_count && "NCPUE_INDEX_FLEET" %in% names(di)) "NCPUE_INDEX_FLEET" else "NCPUE_INDEX"
+    n_se_col  <- if (has_count && "NCPUE_SE_FLEET"    %in% names(di)) "NCPUE_SE_FLEET"    else "NCPUE_SE"
+  } else {
+    # Backward compatible fallback
+    w_idx_col <- "WCPUE_INDEX"
+    w_se_col  <- "WCPUE_SE"
+    n_idx_col <- "NCPUE_INDEX"
+    n_se_col  <- "NCPUE_SE"
+  }
+
   # Build plot_df from monthly index (this replaces the old GEAR/YEAR legacy blocks)
   if (plot_type == "MONTH") {
 
@@ -85,10 +110,10 @@ plot_observer_cpue <- function(
     plot_df <- di %>%
       dplyr::group_by(.data$YEAR, .data$MONTH) %>%
       dplyr::summarise(
-        WCPUE_INDEX = sum(.data$WCPUE_INDEX, na.rm = TRUE),
-        WCPUE_SE    = sqrt(sum((.data$WCPUE_SE)^2, na.rm = TRUE)),
-        NCPUE_INDEX = if (has_count) sum(.data$NCPUE_INDEX, na.rm = TRUE) else NA_real_,
-        NCPUE_SE    = if (has_count) sqrt(sum((.data$NCPUE_SE)^2, na.rm = TRUE)) else NA_real_,
+        WCPUE_INDEX = sum(.data[[w_idx_col]], na.rm = TRUE),
+        WCPUE_SE    = sqrt(sum((.data[[w_se_col]])^2, na.rm = TRUE)),
+        NCPUE_INDEX = if (has_count) sum(.data[[n_idx_col]], na.rm = TRUE) else NA_real_,
+        NCPUE_SE    = if (has_count) sqrt(sum((.data[[n_se_col]])^2, na.rm = TRUE)) else NA_real_,
         .groups = "drop"
       )
 
@@ -99,10 +124,10 @@ plot_observer_cpue <- function(
     plot_df <- di %>%
       dplyr::group_by(.data$YEAR, .data$MONTH,.data$GEAR) %>%
       dplyr::summarise(
-        WCPUE_INDEX = sum(.data$WCPUE_INDEX, na.rm = TRUE),
-        WCPUE_SE    = sqrt(sum((.data$WCPUE_SE)^2, na.rm = TRUE)),
-        NCPUE_INDEX = if (has_count) sum(.data$NCPUE_INDEX, na.rm = TRUE) else NA_real_,
-        NCPUE_SE    = if (has_count) sqrt(sum((.data$NCPUE_SE)^2, na.rm = TRUE)) else NA_real_,
+        WCPUE_INDEX = sum(.data[[w_idx_col]], na.rm = TRUE),
+        WCPUE_SE    = sqrt(sum((.data[[w_se_col]])^2, na.rm = TRUE)),
+        NCPUE_INDEX = if (has_count) sum(.data[[n_idx_col]], na.rm = TRUE) else NA_real_,
+        NCPUE_SE    = if (has_count) sqrt(sum((.data[[n_se_col]])^2, na.rm = TRUE)) else NA_real_,
         .groups = "drop"
       )
   }
@@ -111,20 +136,20 @@ plot_observer_cpue <- function(
     plot_df <- di %>%
       dplyr::group_by(.data$YEAR, .data$GEAR) %>%
       dplyr::summarise(
-        WCPUE_INDEX = sum(.data$WCPUE_INDEX, na.rm = TRUE),
-        WCPUE_SE    = sqrt(sum((.data$WCPUE_SE)^2, na.rm = TRUE)),
-        NCPUE_INDEX = if (has_count) sum(.data$NCPUE_INDEX, na.rm = TRUE) else NA_real_,
-        NCPUE_SE    = if (has_count) sqrt(sum((.data$NCPUE_SE)^2, na.rm = TRUE)) else NA_real_,
+        WCPUE_INDEX = sum(.data[[w_idx_col]], na.rm = TRUE),
+        WCPUE_SE    = sqrt(sum((.data[[w_se_col]])^2, na.rm = TRUE)),
+        NCPUE_INDEX = if (has_count) sum(.data[[n_idx_col]], na.rm = TRUE) else NA_real_,
+        NCPUE_SE    = if (has_count) sqrt(sum((.data[[n_se_col]])^2, na.rm = TRUE)) else NA_real_,
         .groups = "drop"
       )
   } else { # YEAR
     plot_df <- di %>%
       dplyr::group_by(.data$YEAR) %>%
       dplyr::summarise(
-        WCPUE_INDEX = sum(.data$WCPUE_INDEX, na.rm = TRUE),
-        WCPUE_SE    = sqrt(sum((.data$WCPUE_SE)^2, na.rm = TRUE)),
-        NCPUE_INDEX = if (has_count) sum(.data$NCPUE_INDEX, na.rm = TRUE) else NA_real_,
-        NCPUE_SE    = if (has_count) sqrt(sum((.data$NCPUE_SE)^2, na.rm = TRUE)) else NA_real_,
+        WCPUE_INDEX = sum(.data[[w_idx_col]], na.rm = TRUE),
+        WCPUE_SE    = sqrt(sum((.data[[w_se_col]])^2, na.rm = TRUE)),
+        NCPUE_INDEX = if (has_count) sum(.data[[n_idx_col]], na.rm = TRUE) else NA_real_,
+        NCPUE_SE    = if (has_count) sqrt(sum((.data[[n_se_col]])^2, na.rm = TRUE)) else NA_real_,
         .groups = "drop"
       )
   }
