@@ -25,8 +25,6 @@ plot_cumulative_catch_by_week(
 
 \item{facet_gear}{Logical; if TRUE, facet by gear type}
 
-\item{gears}{Character vector of gears to include after recoding}
-
 \item{show_titles}{Logical; if FALSE, remove title/subtitle}
 
 \item{title}{Optional plot title}
@@ -34,6 +32,8 @@ plot_cumulative_catch_by_week(
 \item{y_units}{Y-axis label}
 
 \item{show_totals}{Logical; if TRUE, annotate final-year catch in upper-left}
+
+\item{gear}{Character vector of gears to include after recoding}
 }
 \value{
 ggplot object

@@ -14,7 +14,7 @@
 #' @param region Optional region selector: "AI","BS","GOA","BSWGOA"
 #' @param areas Optional explicit area codes (overrides region)
 #' @param facet_gear Logical; if TRUE, facet by gear type
-#' @param gears Character vector of gears to include after recoding
+#' @param gear Character vector of gears to include after recoding
 #' @param show_titles Logical; if FALSE, remove title/subtitle
 #' @param title Optional plot title
 #' @param y_units Y-axis label

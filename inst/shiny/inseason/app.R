@@ -82,13 +82,14 @@ call_formals <- function(fun, args) {
 parse_mdy <- function(x) as.Date(x, format = "%m/%d/%Y")
 region_choices <- c("All" = "ALL", "AI" = "AI", "BS" = "BS", "GOA" = "GOA", "BSWGOA" = "BSWGOA")
 gear_choices   <- c("Trawl", "Pot", "Longline")
+loc_choices    <- c("Lat","Lon")
 region_val <- function(x) if (identical(x, "ALL")) c("AI", "BS", "GOA") else x
 
 nrow0 <- function(x) if (is.null(x)) 0L else nrow(x)
 
 ui <- fluidPage(
   theme = bs_theme(bootswatch = "flatly"),
-  titlePanel("AFSC Catch & Composition Dashboard"),
+  titlePanel("AFSC Inseason Dashboard"),
 
   card(
     card_header("Controls"),
@@ -137,17 +138,45 @@ ui <- fluidPage(
       wrap_spinner(plotOutput("p_points", height = 720))
     ),
 
+nav_panel(
+      "Catch depth (Confidential)",
+      card(card_header("Options"),
+        fluidRow(
+          column(3, radioButtons("lat_lon_dpoints", "Latitude or Longitude", choices = loc_choices, selected = "Lat",inline=TRUE)),
+          column(3, checkboxInput("facet_gear_dpoints", "Facet by gear", value = FALSE)),
+          column(3, checkboxInput("show_titles_dpoints", "Show title", value = TRUE)),
+          column(3, checkboxInput("show_label_dpoints", "Show upper-right label", value = FALSE))
+        )
+      ),
+      wrap_spinner(plotOutput("p_dpoints", height = 720))
+    ),
+
     nav_panel(
       "Catch map (grid)",
       card(card_header("Options"),
         fluidRow(
-          column(3, numericInput("grid_km", "Grid size (km)", value = 20, min = 5, step = 5)),
+          column(3, numericInput("grid_km", "Grid size (km)", value = 20, min = 1, step = 1)),
           column(3, checkboxInput("facet_gear_grid", "Facet by gear", value = FALSE)),
           column(3, checkboxInput("show_titles_grid", "Show title", value = TRUE)),
           column(3, checkboxInput("show_label_grid", "Show upper-right label", value = FALSE))
         )
       ),
       wrap_spinner(plotOutput("p_grid", height = 720))
+    ),
+
+      nav_panel(
+      "Catch depth (grid)",
+      card(card_header("Options"),
+        fluidRow(
+          column(3, radioButtons("lat_lon_dgrid", "Latitude or Longitude", choices = loc_choices, selected = "Lat",inline=TRUE)),
+          column(3, numericInput("grid_dkm", "Grid size (km)", value = 20, min = 1, step = 1)),
+          column(3, numericInput("depth", "Grid size (depth m)", value = 10, min = 1, step = 1)),
+          column(3, checkboxInput("facet_gear_dgrid", "Facet by gear", value = FALSE)),
+          column(3, checkboxInput("show_titles_dgrid", "Show title", value = TRUE)),
+          column(3, checkboxInput("show_label_dgrid", "Show upper-right label", value = FALSE))
+        )
+      ),
+      wrap_spinner(plotOutput("p_dgrid", height = 720))
     ),
 
     nav_panel(
@@ -552,6 +581,20 @@ observeEvent(input$kr_save, {
         )
         add_plot_page(p1)
 
+        p1d <- plot_catch_depth_noaa_np_date(
+          data_o = dat$data_o,
+          species_name = isolate(input$species_name),
+          date_min = isolate(input$date_min),
+          date_max = isolate(input$date_max),
+          region = isolate(region_val(input$region)),
+          gear = isolate(input$gear),
+          x_axis = isolate(input$lat_lon_dpoints),
+          facet_gear = isolate(input$facet_gear_dpoints),
+          show_titles = isolate(input$show_titles_dpoints),
+          show_label = isolate(input$show_label_dpoints)
+        )
+        add_plot_page(p1d)
+
         p2 <- plot_catch_locations_noaa_np_grid_date(
           data_o = dat$data_o,
           data_em = dat$data_em,
@@ -566,6 +609,22 @@ observeEvent(input$kr_save, {
           show_label = isolate(input$show_label_grid)
         )
         add_plot_page(p2)
+
+        p2d <- plot_catch_depth_noaa_np_grid_date(
+          data_o = dat$data_o,
+          species_name = isolate(input$species_name),
+          date_min = isolate(input$date_min),
+          date_max = isolate(input$date_max),
+          region = isolate(region_val(input$region)),
+          gear = isolate(input$gear),
+          x_axis = isolate(input$lat_lon_dgrid),
+          x_bin_km = isolate(input$grid_dkm),
+          depth_bin_m = isolate(input$depth),
+          facet_gear = isolate(input$facet_gear_dgrid),
+          show_titles = isolate(input$show_titles_dgrid),
+          show_label = isolate(input$show_label_dgrid)
+        )
+        add_plot_page(p2d)
       }
 
       # ---- Length frequency ----
@@ -601,7 +660,9 @@ observeEvent(input$kr_save, {
       cpue_dat <- cpue_rv()
       if (!is.null(cpue_dat)) {
         out <- plot_observer_cpue(
-          cpue_dat,
+          pulled = cpue_dat,
+          region = isolate(region_val(input$region)),
+          gear = isolate(input$gear),
           plot_type = isolate(input$cpue_plot_type),
           month_gear_facet = isolate(input$month_gear_facet)
         )
@@ -633,6 +694,27 @@ observeEvent(input$kr_save, {
     )
   })
 
+  output$p_dpoints <- renderPlot({
+    render_tick()
+    dat <- catch_rv()
+    validate(need(!is.null(dat), "No catch data pulled. Click 'Pull data only' first."))
+    validate(need(nrow0(dat$data_o) > 0,
+                  "No observer catch data available for these filters."))
+
+    plot_catch_depth_noaa_np_date(
+          data_o = dat$data_o,
+          species_name = input$species_name,
+          date_min = input$date_min,
+          date_max = input$date_max,
+          region = region_val(input$region),
+          gear = input$gear,
+          x_axis = input$lat_lon_dpoints,
+          facet_gear = input$facet_gear_dpoints,
+          show_titles = input$show_titles_dpoints,
+          show_label = input$show_label_dpoints
+        )
+  })
+
   output$p_grid <- renderPlot({
     render_tick()
     dat <- catch_rv()
@@ -653,6 +735,29 @@ observeEvent(input$kr_save, {
       show_titles = input$show_titles_grid,
       show_label = input$show_label_grid
     )
+  })
+
+  output$p_dgrid <- renderPlot({
+    render_tick()
+    dat <- catch_rv()
+    validate(need(!is.null(dat), "No catch data pulled. Click 'Pull data only' first."))
+    validate(need(nrow0(dat$data_o) > 0 ,
+                  "No observer catch data available for these filters."))
+
+    plot_catch_depth_noaa_np_grid_date(
+          data_o = dat$data_o,
+          species_name = input$species_name,
+          date_min = input$date_min,
+          date_max = input$date_max,
+          region = region_val(input$region),
+          gear = input$gear,
+          x_axis = input$lat_lon_dgrid,
+          x_bin_km = input$grid_dkm,
+          depth_bin_m = input$depth,
+          facet_gear = input$facet_gear_dgrid,
+          show_titles = input$show_titles_dgrid,
+          show_label = input$show_label_dgrid
+        )
   })
 
   output$p_lf <- renderPlot({
@@ -701,6 +806,8 @@ observeEvent(input$kr_save, {
     validate(need(!is.null(cpue_dat), "No CPUE data pulled. Click 'Pull data only' first."))
 
     out <- plot_observer_cpue(cpue_dat,
+                              region = region_val(input$region),
+                              gear = input$gear,
                               plot_type = input$cpue_plot_type,
                               month_gear_facet = input$month_gear_facet)
     validate(need(!is.null(out$plots$weight), "Weight CPUE plot not available for these filters."))
@@ -719,6 +826,8 @@ observeEvent(input$kr_save, {
     validate(need(!is.null(cpue_dat), "No CPUE data pulled. Click 'Pull data only' first."))
 
     out <- plot_observer_cpue(cpue_dat,
+                              region = region_val(input$region),
+                              gear = input$gear,
                               plot_type = input$cpue_plot_type,
                               month_gear_facet = input$month_gear_facet)
 

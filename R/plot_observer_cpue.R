@@ -16,7 +16,7 @@
 #' @param species Character or numeric.
 #'   Species identifier used for labeling outputs.
 #'
-#' @param AREA Character.
+#' @param region Character.
 #'   Human-readable area label used in plot titles (e.g., "Bering Sea").
 #'
 #' @param code data.frame.
@@ -56,6 +56,9 @@
 plot_observer_cpue <- function(
   pulled,
   plot_type = c("MONTH", "GEAR", "YEAR"),
+  region = c('BS','GOA','AI'),
+  areas = NULL,
+  gear = c("Trawl", "Pot", "Longline"),
   month_gear_facet =FALSE,
   base_size = 16
 ) {
@@ -65,8 +68,15 @@ plot_observer_cpue <- function(
 
   plot_type <- match.arg(plot_type)
 
+  region_map <- list(
+      AI     = 540:544,
+      BS     = 500:539,
+      GOA    = 600:699,
+      BSWGOA = c(500:539, 610:620),
+      ALL = c(500:699)
+    )
 
-  subtitle_std <- ""
+  
   if (is.null(pulled$data_index_month) || nrow(pulled$data_index_month) == 0) {
     return(list(
       data_index = pulled$data_index_month,
@@ -78,6 +88,22 @@ plot_observer_cpue <- function(
   has_count <- isTRUE(pulled$meta$has_count)
 
   di <- dplyr::as_tibble(pulled$data_index_month)
+
+region_label <- NULL
+  if (!is.null(areas)) {
+    areas <- as.integer(areas)
+    di <- di[di$NMFS_AREA %in% areas, , drop = FALSE]
+    region_label <- paste0("Area: ", paste(sort(unique(areas)), collapse = ", "))
+  } else if (!is.null(region)) {
+    region <- unique(toupper(region))
+    area_codes <- sort(unique(unlist(region_map[region])))
+    di <- di[di$NMFS_AREA %in% area_codes, , drop = FALSE]
+    region_label <- paste0("Region: ", paste(region, collapse = ", "))
+  }
+
+  # ---- gear filter ----
+  di <- di[di$GEAR %in% gear, , drop = FALSE]
+
 
   # Choose which index columns to use.
   # - *_FLEET columns represent catch-weighted blending across gears (fleet index).

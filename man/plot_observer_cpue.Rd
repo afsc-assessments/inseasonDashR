@@ -7,6 +7,9 @@
 plot_observer_cpue(
   pulled,
   plot_type = c("MONTH", "GEAR", "YEAR"),
+  region = c("BS", "GOA", "AI"),
+  areas = NULL,
+  gear = c("Trawl", "Pot", "Longline"),
   month_gear_facet = FALSE,
   base_size = 16
 )
@@ -15,6 +18,9 @@ plot_observer_cpue(
 \item{plot_type}{Character.
 Either \code{"GEAR"} (separate CPUE series by gear) or
 \code{"Year"} (aggregated across gear).}
+
+\item{region}{Character.
+Human-readable area label used in plot titles (e.g., "Bering Sea").}
 
 \item{base_size}{Numeric.
 Base font size passed to \code{ggplot2::theme_bw()}.}
@@ -25,9 +31,6 @@ gear, year, and NMFS area.}
 
 \item{species}{Character or numeric.
 Species identifier used for labeling outputs.}
-
-\item{AREA}{Character.
-Human-readable area label used in plot titles (e.g., "Bering Sea").}
 
 \item{code}{data.frame.
 Lookup table containing observer program metadata (must include
