@@ -85,6 +85,20 @@ gear_choices   <- c("Trawl", "Pot", "Longline")
 loc_choices    <- c("Lat","Lon")
 region_val <- function(x) if (identical(x, "ALL")) c("AI", "BS", "GOA") else x
 
+
+# ---- species codes (COMMON_NAME dropdown; SPECIES_CODE value) ----
+species_codes_path_pkg <- system.file("extdata", "ALT_TABLES", "OBS_SPECIES_CODES.csv", package = "inseasonDashboard")
+if (!file.exists(species_codes_path_pkg)) {
+  stop("OBS_SPECIES_CODES.csv not found at: ", species_codes_path_pkg)
+}
+
+species_tbl <- utils::read.csv(species_codes_path_pkg, stringsAsFactors = FALSE)
+species_tbl$COMMON_NAME  <- trimws(species_tbl$COMMON_NAME)
+species_tbl$SPECIES_CODE <- trimws(as.character(species_tbl$SPECIES_CODE))
+species_tbl <- species_tbl[nzchar(species_tbl$COMMON_NAME) & nzchar(species_tbl$SPECIES_CODE), ]
+species_tbl <- species_tbl[order(species_tbl$COMMON_NAME), ]
+species_choices <- stats::setNames(species_tbl$SPECIES_CODE, species_tbl$COMMON_NAME)
+
 nrow0 <- function(x) if (is.null(x)) 0L else nrow(x)
 
 ui <- fluidPage(
@@ -95,11 +109,27 @@ ui <- fluidPage(
     card_header("Controls"),
     fluidRow(
       column(
-        3,
-        numericInput("species_code", "Agency species code", value = 202, min = 0, step = 1),
-        textInput("species_name", "Species name (for titles)", value = "Pacific cod"),
-        sliderInput("prop_min", "Min species proportion for CPUE", min = 0, max = 1, value = 0.30, step = 0.05)
-      ),
+  3,
+  selectizeInput(
+    "species_code",
+    "Species",
+    choices  = species_choices,
+    selected = unname(species_choices)[1],
+    options  = list(placeholder = "Type to search species…")
+  ),
+  textInput(
+    "species_name",
+    "Species name (for titles)",
+    value = species_tbl$COMMON_NAME[1],
+    width = "100%"
+  ),
+  sliderInput(
+    "prop_min",
+    "Min species proportion for CPUE",
+    min = 0, max = 1, value = 0.30, step = 0.05
+  )
+),
+
       column(
         3,
         textInput("date_min", "Start date (mm/dd/yyyy)", value = "01/01/2025"),
@@ -218,6 +248,14 @@ nav_panel(
 
 server <- function(input, output, session) {
 
+  # keep species_name synced to selected species_code
+  observeEvent(input$species_code, {
+    sc <- as.character(input$species_code)
+    nm <- species_tbl$COMMON_NAME[match(sc, as.character(species_tbl$SPECIES_CODE))]
+    if (!is.na(nm) && nzchar(nm)) updateTextInput(session, "species_name", value = nm)
+  }, ignoreInit = FALSE)
+
+
   con_rv     <- reactiveVal(NULL)
   catch_rv   <- reactiveVal(NULL)
   council_rv <- reactiveVal(NULL)
@@ -332,7 +370,7 @@ observeEvent(input$kr_save, {
   start_pull <- function() {
     if (isTRUE(pulling_rv())) return()
 
-    sp       <- isolate(input$species_code)
+    sp       <- suppressWarnings(as.integer(isolate(input$species_code)))
     dmin_chr <- isolate(input$date_min)
     dmax_chr <- isolate(input$date_max)
     reg      <- isolate(region_val(input$region))
