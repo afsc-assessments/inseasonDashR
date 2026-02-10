@@ -1,6 +1,6 @@
 # inseasonDashR
 
-**inseasonDashR** is an internal AFSC R package that provides a standardized, reusable framework for launching and running an in‑season fisheries monitoring dashboard. The package wraps a Shiny application used to explore Alaska fisheries catch, composition, and CPUE data during the fishing year.
+**inseasonDashR** is an internal AFSC R package that provides a standardized, reusable framework for launching and running an in-season fisheries monitoring dashboard. The package wraps a Shiny application used to explore Alaska fisheries catch, composition, and CPUE data during the fishing year.
 
 This repository is maintained under **afsc-assessments/inseasonDashR** and is intended for **internal NOAA/AFSC analytical use**.
 
@@ -48,17 +48,70 @@ This will start the Shiny application in your local R session.
 
 ## Credentials and database access
 
-The dashboard requires access to AFSC and AKFIN databases.
+The dashboard requires access to the AFSC and AKFIN databases.
 
 - Credentials are managed using the **keyring** package
 - On first use, if credentials are not found, the app will prompt you to enter them
-- Credentials are stored securely in your system credential store (not in the repo)
+- Credentials are stored securely in your system credential store (not in the repository)
 
 Required keyring services:
 - `afsc`
 - `akfin`
 
 No passwords are written to disk or saved in plaintext.
+
+### Checking your keyring
+
+You can verify which credentials are currently stored on your system using:
+
+```r
+keyring::key_list("afsc")
+keyring::key_list("akfin")
+```
+
+These commands list the usernames associated with each service **without revealing passwords**.  
+If nothing is returned, no credentials are stored for that service.
+
+### Adding credentials
+
+If the required credentials are not found, the dashboard will prompt you to enter them when needed.  
+You may also add credentials manually in advance:
+
+```r
+keyring::key_set_with_values(service="afsc", username = "<your_afsc_username>", password = "<your_afsc_password>")
+keyring::key_set_with_values("akfin", username = "<your_akfin_username>", password = "<your_akfin_password>")
+```
+
+You will be prompted securely for the password, which will then be stored in your system keychain.
+
+### Removing or resetting credentials
+
+If you need to remove stored credentials (for example, if a password has changed or the wrong username was saved), you can delete them explicitly.
+
+To delete a specific credential:
+
+```r
+keyring::key_delete("afsc",  "<your_afsc_username>")
+keyring::key_delete("akfin", "<your_akfin_username>")
+```
+
+To remove **all** stored credentials for a service:
+
+```r
+keyring::key_list("afsc")$username |>
+  lapply(function(u) keyring::key_delete("afsc", u))
+
+keyring::key_list("akfin")$username |>
+  lapply(function(u) keyring::key_delete("akfin", u))
+```
+
+After deletion, the next dashboard run will prompt you to re-enter credentials.
+
+### Notes
+
+- Credentials are stored per-user and per-machine
+- Different analysts can use different database accounts without conflict
+- Passwords are never printed, logged, or cached by the application
 
 ---
 
@@ -68,16 +121,23 @@ No passwords are written to disk or saved in plaintext.
 
 Core dependencies:
 ```r
-shiny
-ggplot2
-bslib
-dplyr
-lubridate
+    data.table
+    DBI
+    odbc
+    bslib
+    keyring
+    dplyr
+    ggplot2
+    scales
+    shiny 
+    stat
+    rnaturalearth
+    rnaturalearthdata
+
 ```
 
 Optional (recommended):
 ```r
-keyring           # secure credential storage
 shinycssloaders   # loading spinners
 ```
 
@@ -131,5 +191,7 @@ It is not an official NOAA product and carries no warranty or guarantee of suppo
 
 ## Maintainer
 
-Steve Barbeaux Steve.barbeaux@noaa.gov  
+Steve Barbeaux  
+Steve.barbeaux@noaa.gov  
+
 Questions, issues, or enhancements should be coordinated within the AFSC assessment community.
