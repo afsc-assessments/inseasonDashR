@@ -20,7 +20,9 @@ Imports:
     ggplot2,
     scales,
     shiny, 
-    stats
+    stats,
+    rnaturalearth,
+    rnaturalearthdata
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
