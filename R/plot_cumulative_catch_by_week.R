@@ -187,11 +187,32 @@ plot_cumulative_catch_by_week <- function(
   line_sizes <- ifelse(agg$YEAR == final_year, 1.2, 0.6)
 
   # ---- title ----
-  if (is.null(title)) {
-    title <- paste0("Cumulative catch by week (", min(yrs), "–", max(yrs), ")")
+# Include the first and last WEEK_END_DATE actually present in the *filtered raw* data.
+# (This reflects the data pull / filtering, not an assumed full-year range.)
+if (is.null(title)) {
+  date_min <- suppressWarnings(min(d$DT, na.rm = TRUE))
+  date_max <- suppressWarnings(max(d$DT, na.rm = TRUE))
+
+  date_lab <- NULL
+  if (inherits(date_min, "Date") && inherits(date_max, "Date") &&
+      is.finite(as.numeric(date_min)) && is.finite(as.numeric(date_max))) {
+    if (date_min == date_max) {
+      date_lab <- format(date_min, "%Y-%m-%d")
+    } else {
+      date_lab <- paste0(format(date_min, "%Y-%m-%d"), " to ", format(date_max, "%Y-%m-%d"))
+    }
   }
 
-  # ---- plot ----
+  yr_min <- suppressWarnings(min(yrs, na.rm = TRUE))
+  yr_max <- suppressWarnings(max(yrs, na.rm = TRUE))
+
+  if (!is.null(date_lab)) {
+    title <- paste0("Cumulative catch by week (", date_lab, "; ", yr_min, "–", yr_max, ")")
+  } else {
+    title <- paste0("Cumulative catch by week (", yr_min, "–", yr_max, ")")
+  }
+}
+# ---- plot ----
   p <- ggplot2::ggplot(
     agg,
     ggplot2::aes(
