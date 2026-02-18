@@ -165,7 +165,8 @@ ui <- fluidPage(
           column(3, checkboxInput("show_label_points", "Show upper-right label", value = FALSE))
         )
       ),
-      wrap_spinner(plotOutput("p_points", height = 720))
+      wrap_spinner(plotOutput("p_points", height = 720)),
+      downloadButton("dl_points_rds", "Download ggplot (.rds)")
     ),
 
 nav_panel(
@@ -178,7 +179,8 @@ nav_panel(
           column(3, checkboxInput("show_label_dpoints", "Show upper-right label", value = FALSE))
         )
       ),
-      wrap_spinner(plotOutput("p_dpoints", height = 720))
+      wrap_spinner(plotOutput("p_dpoints", height = 720)),
+      downloadButton("dl_dpoints_rds", "Download ggplot (.rds)")
     ),
 
     nav_panel(
@@ -191,7 +193,8 @@ nav_panel(
           column(3, checkboxInput("show_label_grid", "Show upper-right label", value = FALSE))
         )
       ),
-      wrap_spinner(plotOutput("p_grid", height = 720))
+      wrap_spinner(plotOutput("p_grid", height = 720)),
+      downloadButton("dl_grid_rds", "Download ggplot (.rds)")
     ),
 
       nav_panel(
@@ -206,7 +209,8 @@ nav_panel(
           column(3, checkboxInput("show_label_dgrid", "Show upper-right label", value = FALSE))
         )
       ),
-      wrap_spinner(plotOutput("p_dgrid", height = 720))
+      wrap_spinner(plotOutput("p_dgrid", height = 720)),
+      downloadButton("dl_dgrid_rds", "Download ggplot (.rds)")
     ),
 
     nav_panel(
@@ -218,7 +222,8 @@ nav_panel(
           column(3, checkboxInput("show_label_lf", "Show upper-right label", value = TRUE))
         )
       ),
-      wrap_spinner(plotOutput("p_lf", height = 650))
+      wrap_spinner(plotOutput("p_lf", height = 650)),
+      downloadButton("dl_lf_rds", "Download ggplot (.rds)")
     ),
 
     nav_panel(
@@ -229,7 +234,8 @@ nav_panel(
           column(3, checkboxInput("show_titles_cum", "Show title", value = TRUE))
         )
       ),
-      wrap_spinner(plotOutput("p_cum", height = 650))
+      wrap_spinner(plotOutput("p_cum", height = 650)),
+      downloadButton("dl_cum_rds", "Download ggplot (.rds)")
     ),
 
     nav_panel(
@@ -241,7 +247,9 @@ nav_panel(
         )
       ),
       wrap_spinner(plotOutput("p_cpue_wt", height = 330)),
-      wrap_spinner(plotOutput("p_cpue_n", height = 330))
+      downloadButton("dl_cpue_wt_rds", "Download weight CPUE ggplot (.rds)"),
+      wrap_spinner(plotOutput("p_cpue_n", height = 330)),
+      downloadButton("dl_cpue_n_rds", "Download number CPUE ggplot (.rds)")
     )
   )
 )
@@ -711,6 +719,200 @@ observeEvent(input$kr_save, {
   )
 
   # ---- plots (gated by render_tick) ----
+  # ---- ggplot objects (for download as .rds) ----
+  points_plot <- reactive({
+    req(render_tick())
+    dat <- catch_rv()
+    req(!is.null(dat))
+    req(nrow0(dat$data_o) > 0 || nrow0(dat$data_em) > 0)
+
+    plot_catch_locations_noaa_np_date(
+      data_o = dat$data_o,
+      data_em = dat$data_em,
+      species_name = input$species_name,
+      date_min = input$date_min,
+      date_max = input$date_max,
+      region = region_val(input$region),
+      gear = input$gear,
+      facet_gear = input$facet_gear_points,
+      show_titles = input$show_titles_points,
+      show_label = input$show_label_points
+    )
+  })
+
+  dpoints_plot <- reactive({
+    req(render_tick())
+    dat <- catch_rv()
+    req(!is.null(dat))
+    req(nrow0(dat$data_o) > 0)
+
+    plot_catch_depth_noaa_np_date(
+      data_o = dat$data_o,
+      species_name = input$species_name,
+      date_min = input$date_min,
+      date_max = input$date_max,
+      region = region_val(input$region),
+      gear = input$gear,
+      x_axis = input$lat_lon_dpoints,
+      facet_gear = input$facet_gear_dpoints,
+      show_titles = input$show_titles_dpoints,
+      show_label = input$show_label_dpoints
+    )
+  })
+
+  grid_plot <- reactive({
+    req(render_tick())
+    dat <- catch_rv()
+    req(!is.null(dat))
+    req(nrow0(dat$data_o) > 0 || nrow0(dat$data_em) > 0)
+
+    plot_catch_locations_noaa_np_grid_date(
+      data_o = dat$data_o,
+      data_em = dat$data_em,
+      species_name = input$species_name,
+      date_min = input$date_min,
+      date_max = input$date_max,
+      region = region_val(input$region),
+      gear = input$gear,
+      cell_km = input$grid_km,
+      facet_gear = input$facet_gear_grid,
+      show_titles = input$show_titles_grid,
+      show_label = input$show_label_grid
+    )
+  })
+
+  dgrid_plot <- reactive({
+    req(render_tick())
+    dat <- catch_rv()
+    req(!is.null(dat))
+    req(nrow0(dat$data_o) > 0)
+
+    plot_catch_depth_noaa_np_grid_date(
+      data_o = dat$data_o,
+      species_name = input$species_name,
+      date_min = input$date_min,
+      date_max = input$date_max,
+      region = region_val(input$region),
+      gear = input$gear,
+      x_axis = input$lat_lon_dgrid,
+      x_bin_km = input$grid_dkm,
+      depth_bin_m = input$depth,
+      facet_gear = input$facet_gear_dgrid,
+      show_titles = input$show_titles_dgrid,
+      show_label = input$show_label_dgrid
+    )
+  })
+
+  lf_plot <- reactive({
+    req(render_tick())
+    lf <- lf_rv()
+    req(!is.null(lf))
+    req(!is.null(lf$raw))
+    req(nrow0(lf$raw) > 0)
+
+    plot_length_frequency_noaa(
+      lf = lf,
+      species_name = input$species_name,
+      date_min = input$date_min,
+      date_max = input$date_max,
+      gear = input$gear,
+      region = region_val(input$region),
+      facet_gear = input$facet_gear_lf,
+      show_titles = input$show_titles_lf,
+      show_label = input$show_label_lf
+    )
+  })
+
+  cum_plot <- reactive({
+    req(render_tick())
+    cc <- council_rv()
+    req(!is.null(cc))
+    req(nrow0(cc) > 0)
+
+    plot_cumulative_catch_by_week(
+      catch = cc,
+      region = region_val(input$region),
+      facet_gear = input$facet_gear_cum,
+      show_titles = input$show_titles_cum
+    )
+  })
+
+  cpue_wt_plot <- reactive({
+    req(render_tick())
+    req(isTRUE(input$pull_cpue))
+    cpue_dat <- cpue_rv()
+    req(!is.null(cpue_dat))
+
+    out <- plot_observer_cpue(cpue_dat,
+                              region = region_val(input$region),
+                              gear = input$gear,
+                              plot_type = input$cpue_plot_type,
+                              month_gear_facet = input$month_gear_facet)
+    req(!is.null(out$plots$weight))
+    out$plots$weight
+  })
+
+  cpue_n_plot <- reactive({
+    req(render_tick())
+    req(isTRUE(input$pull_cpue))
+    cpue_dat <- cpue_rv()
+    req(!is.null(cpue_dat))
+
+    out <- plot_observer_cpue(cpue_dat,
+                              region = region_val(input$region),
+                              gear = input$gear,
+                              plot_type = input$cpue_plot_type,
+                              month_gear_facet = input$month_gear_facet)
+
+    # If the "number" plot isn't available, return NULL (download handler will block)
+    out$plots$number
+  })
+
+  # ---- download handlers: save ggplot objects as .rds ----
+  output$dl_points_rds <- downloadHandler(
+    filename = function() paste0("catch_points_", input$species_code, "_", format(Sys.Date(), "%Y-%m-%d"), ".rds"),
+    content  = function(file) saveRDS(points_plot(), file)
+  )
+
+  output$dl_dpoints_rds <- downloadHandler(
+    filename = function() paste0("catch_depth_points_", input$species_code, "_", format(Sys.Date(), "%Y-%m-%d"), ".rds"),
+    content  = function(file) saveRDS(dpoints_plot(), file)
+  )
+
+  output$dl_grid_rds <- downloadHandler(
+    filename = function() paste0("catch_grid_", input$species_code, "_", format(Sys.Date(), "%Y-%m-%d"), ".rds"),
+    content  = function(file) saveRDS(grid_plot(), file)
+  )
+
+  output$dl_dgrid_rds <- downloadHandler(
+    filename = function() paste0("catch_depth_grid_", input$species_code, "_", format(Sys.Date(), "%Y-%m-%d"), ".rds"),
+    content  = function(file) saveRDS(dgrid_plot(), file)
+  )
+
+  output$dl_lf_rds <- downloadHandler(
+    filename = function() paste0("length_frequency_", input$species_code, "_", format(Sys.Date(), "%Y-%m-%d"), ".rds"),
+    content  = function(file) saveRDS(lf_plot(), file)
+  )
+
+  output$dl_cum_rds <- downloadHandler(
+    filename = function() paste0("cumulative_catch_weekly_", input$species_code, "_", format(Sys.Date(), "%Y-%m-%d"), ".rds"),
+    content  = function(file) saveRDS(cum_plot(), file)
+  )
+
+  output$dl_cpue_wt_rds <- downloadHandler(
+    filename = function() paste0("cpue_weight_", input$species_code, "_", format(Sys.Date(), "%Y-%m-%d"), ".rds"),
+    content  = function(file) saveRDS(cpue_wt_plot(), file)
+  )
+
+  output$dl_cpue_n_rds <- downloadHandler(
+    filename = function() paste0("cpue_number_", input$species_code, "_", format(Sys.Date(), "%Y-%m-%d"), ".rds"),
+    content  = function(file) {
+      p <- cpue_n_plot()
+      req(!is.null(p))
+      saveRDS(p, file)
+    }
+  )
+
   output$p_points <- renderPlot({
     render_tick()
     dat <- catch_rv()
